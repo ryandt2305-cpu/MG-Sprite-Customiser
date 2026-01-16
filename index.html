@@ -278,26 +278,6 @@
       opacity: 0.5;
     }
 
-    .slot-btn::after {
-      content: attr(data-layer);
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: var(--accent-2);
-      color: white;
-      font-size: 9px;
-      font-weight: bold;
-      padding: 2px 4px;
-      border-radius: 50%;
-      min-width: 16px;
-      text-align: center;
-      display: none;
-    }
-
-    .slot-btn.occupied::after {
-      display: block;
-    }
-
     #customTintControls {
       display: none;
       grid-template-columns: 1fr 1fr;
@@ -830,7 +810,6 @@
         const btn = document.createElement('button');
         btn.className = 'slot-btn';
         btn.dataset.index = i;
-        btn.dataset.layer = slots.length - i; // Top layer = 10, bottom = 1
         btn.textContent = i + 1;
         btn.draggable = true;
         slotListEl.appendChild(btn);
