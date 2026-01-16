@@ -9,6 +9,7 @@
   <meta property="og:title" content="Magic Garden Sprite Customizer">
   <meta property="og:description"
     content="Customise and download sprites from Magic Garden. Apply mutations like Gold, Rainbow, and more.">
+  <meta property="og:image" content="https://ryandt2305-cpu.github.io/MG-Sprite-Customiser/assets/preview.png">
   <meta property="og:type" content="website">
   <title>Magic Garden Sprite Customizer</title>
   <style>
@@ -200,6 +201,9 @@
 
     #previewCanvas canvas {
       image-rendering: pixelated;
+      max-width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
     }
 
     .meta {
@@ -225,7 +229,7 @@
       <h1>Sprite Customizer</h1>
       <p>All sprites embedded. Choose a category, apply mutations, then download.</p>
     </div>
-    <button id="themeToggle" title="Toggle Light/Dark Mode">🌙</button>
+    <button id="themeToggle" title="Toggle Light/Dark Mode"></button>
   </header>
   <main>
     <section class="panel" id="controls">
@@ -249,7 +253,7 @@
       </div>
 
       <label for="scale">Scale</label>
-      <input id="scale" type="range" min="1" max="6" step="0.5" value="2">
+      <input id="scale" type="range" min="0.1" max="4" step="0.1" value="1.5">
 
       <div class="actions">
         <button id="download">Download PNG</button>
@@ -689,6 +693,9 @@
     function loadImageWithFallback(primarySrc, fallbackSrc) {
       return new Promise((resolve, reject) => {
         const img = new Image();
+        if (window.location.protocol !== "file:") {
+          img.crossOrigin = "anonymous";
+        }
         let triedFallback = false;
         img.onload = () => resolve(img);
         img.onerror = () => {
@@ -973,7 +980,11 @@
         populateSprites();
         renderPreview();
 
-        statusEl.textContent = "Loaded " + frameIndex.size + " sprites.";
+        const isFileProtocol = window.location.protocol === "file:";
+        const baseStatus = "Loaded " + frameIndex.size + " sprites.";
+        statusEl.textContent = isFileProtocol
+          ? baseStatus + " (Notice: Downloads are blocked on file:// protocol)"
+          : baseStatus;
       } catch (err) {
         statusEl.textContent = "Failed to load sprites: " + (err && err.message ? err.message : err);
         console.error(err);
@@ -996,11 +1007,15 @@
     optIconsEl.addEventListener("change", renderPreview);
     optOverlaysEl.addEventListener("change", renderPreview);
 
+    const SUN_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+    const MOON_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+
     themeToggleEl.addEventListener("click", () => {
       const isDark = document.documentElement.getAttribute("data-theme") === "dark";
       const newTheme = isDark ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", newTheme);
-      themeToggleEl.textContent = newTheme === "dark" ? "🌙" : "☀️";
+      themeToggleEl.innerHTML = newTheme === "dark" ? MOON_ICON : SUN_ICON;
+      localStorage.setItem("theme", newTheme);
     });
 
 
@@ -1017,18 +1032,19 @@
           URL.revokeObjectURL(url);
         }, "image/png");
       } catch (err) {
-        if (err.name === "SecurityError") {
-          alert("Cannot download: Browser security blocks exporting tainted canvases from 'file://'.\n\nPlease run this tool via a local server (e.g. 'npx serve' or 'python -m http.server') to enable downloads.");
+        if (err.name === "SecurityError" || (err.message && err.message.includes("tainted"))) {
+          alert("Cannot download: Browser security blocks exporting images from 'file://' or cross-origin sources.\n\nPlease run this tool via a local server (e.g. 'npx serve', 'python -m http.server', or VS Code Live Server) to enable downloads.");
         } else {
-          console.error(err);
-          statusEl.textContent = "Download failed.";
+          console.error("Download failed:", err);
+          statusEl.textContent = "Download failed: " + err.message;
         }
       }
     });
 
-    // Default to dark mode
-    document.documentElement.setAttribute("data-theme", "dark");
-    themeToggleEl.textContent = "🌙";
+    // Theme Persistence
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    themeToggleEl.innerHTML = savedTheme === "dark" ? MOON_ICON : SUN_ICON;
 
     init();
   </script>
