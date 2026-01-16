@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sprite Customizer</title>
+  <style>
+    :root {
+      --bg: #f4efe8;
+      --panel: #fff8ee;
+      --ink: #2a231e;
+      --accent: #e46f4a;
+      --accent-2: #3b7a74;
+      --muted: #746a5f;
+      --border: #e3d7c8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 15% 10%, #fff6e5, transparent 60%),
+        radial-gradient(1200px 600px at 85% 0%, #f0f9f6, transparent 60%),
+        var(--bg);
+    }
+
+    header {
+      padding: 18px 24px 12px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(90deg, #fff4e3, #f6fff9);
+    }
+
+    header h1 {
+      margin: 0 0 6px 0;
+      font-size: 20px;
+      letter-spacing: 0.4px;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(260px, 360px) 1fr;
+      gap: 18px;
+      padding: 18px 24px 24px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(60, 50, 40, 0.08);
+    }
+
+    .panel h2 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 10px 0 6px;
+    }
+
+    select,
+    input[type="text"],
+    input[type="range"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .mutations {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 6px 10px;
+    }
+
+    .mutations label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .toggles {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 6px 10px;
+    }
+
+    .toggles label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button.secondary {
+      background: var(--accent-2);
+    }
+
+    #previewWrap {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    #previewCanvas {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      display: grid;
+      place-items: center;
+      min-height: 360px;
+    }
+
+    #previewCanvas canvas {
+      image-rendering: pixelated;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta strong {
+      color: var(--ink);
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Sprite Customizer</h1>
+    <p>All sprites embedded. Choose a category, apply mutations, then download.</p>
+  </header>
+  <main>
+    <section class="panel" id="controls">
+      <h2>Controls</h2>
+      <label for="category">Category</label>
+      <select id="category"></select>
+
+      <label for="search">Search</label>
+      <input id="search" type="text" placeholder="Type to filter sprites">
+
+      <label for="sprite">Sprite</label>
+      <select id="sprite"></select>
+
+      <label>Mutations</label>
+      <div class="mutations" id="mutationList"></div>
+
+      <label>Options</label>
+      <div class="toggles">
+        <label><input type="checkbox" id="optIcons" checked> Icons</label>
+        <label><input type="checkbox" id="optOverlays" checked> Tall overlays</label>
+      </div>
+
+      <label for="scale">Scale</label>
+      <input id="scale" type="range" min="1" max="6" step="0.5" value="2">
+
+      <div class="actions">
+        <button id="download">Download PNG</button>
+        <button id="copy" class="secondary">Copy Data URL</button>
+      </div>
+
+      <p class="meta" id="status">Loading sprites...</p>
+    </section>
+
+    <section class="panel" id="previewWrap">
+      <h2>Preview</h2>
+      <div id="previewCanvas"></div>
+      <div class="meta" id="meta"></div>
+    </section>
+  </main>
+
+  <!-- INLINE_SHEETS_START -->
+  <!-- External sheet: assets/flat-sprites.webp -->
+  <!-- INLINE_SHEETS_END -->
+
+
+
+
+  <!-- INLINE_ATLASES_START -->
+  <script id="atlasFlat" type="application/json">
+{"frames":{"sprite/tallplant/Bamboo":{"frame":{"x":4,"y":4,"w":281,"h":1280},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":281,"h":1280},"sourceSize":{"w":281,"h":1280},"anchor":{"x":0.519573,"y":0.964063}},"sprite/tallplant/Cactus":{"frame":{"x":289,"y":4,"w":446,"h":1280},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":446,"h":1280},"sourceSize":{"w":446,"h":1280},"anchor":{"x":0.517937,"y":0.952344}},"sprite/mutation-overlay/ChilledTallPlant":{"frame":{"x":739,"y":4,"w":1024,"h":1024},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":1024,"h":1024},"sourceSize":{"w":1024,"h":1024},"anchor":{"x":0.5,"y":0.5}},"sprite/mutation-overlay/FrozenTallPlant":{"frame":{"x":1767,"y":4,"w":1024,"h":1024},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":1024,"h":1024},"sourceSize":{"w":1024,"h":1024},"anchor":{"x":0.5,"y":0.5}},"sprite/mutation-overlay/WetTallPlant":{"frame":{"x":2795,"y":4,"w":1024,"h":1024},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":1024,"h":1024},"sourceSize":{"w":1024,"h":1024},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/PineTree":{"frame":{"x":4,"y":1288,"w":488,"h":979},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":488,"h":979},"sourceSize":{"w":488,"h":979},"anchor":{"x":0.490741,"y":0.927803}},"sprite/pet/WhiteCaribou":{"frame":{"x":496,"y":1288,"w":465,"h":831},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":465,"h":831},"sourceSize":{"w":465,"h":831},"anchor":{"x":0.497854,"y":0.990385}},"sprite/plant/PalmTree":{"frame":{"x":965,"y":1288,"w":425,"h":758},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":425,"h":758},"sourceSize":{"w":425,"h":758},"anchor":{"x":0.501176,"y":0.961741}},"sprite/plant/Tree":{"frame":{"x":1394,"y":1288,"w":477,"h":743},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":477,"h":743},"sourceSize":{"w":477,"h":743},"anchor":{"x":0.507338,"y":0.915209}},"sprite/plant/CacaoTree":{"frame":{"x":1875,"y":1288,"w":457,"h":666},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":457,"h":666},"sourceSize":{"w":457,"h":666},"anchor":{"x":0.507659,"y":0.921922}},"sprite/tallplant/MoonCelestialPlant":{"frame":{"x":2336,"y":1288,"w":620,"h":620},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":620,"h":620},"sourceSize":{"w":620,"h":620},"anchor":{"x":0.5,"y":0.87}},"sprite/tallplant/MoonCelestialPlantActive":{"frame":{"x":2960,"y":1288,"w":620,"h":620},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":620,"h":620},"sourceSize":{"w":620,"h":620},"anchor":{"x":0.5,"y":0.87}},"sprite/tallplant/MoonCelestialPlatform":{"frame":{"x":4,"y":2271,"w":620,"h":620},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":620,"h":620},"sourceSize":{"w":620,"h":620},"anchor":{"x":0.5,"y":0.87}},"sprite/pet/Peacock":{"frame":{"x":628,"y":2271,"w":653,"h":600},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":653,"h":600},"sourceSize":{"w":653,"h":600},"anchor":{"x":0.497703,"y":0.993333}},"sprite/tallplant/DawnCelestialPlant":{"frame":{"x":1285,"y":2271,"w":596,"h":596},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":596,"h":596},"sourceSize":{"w":596,"h":596},"anchor":{"x":0.5,"y":0.87}},"sprite/tallplant/DawnCelestialPlantActive":{"frame":{"x":1885,"y":2271,"w":596,"h":596},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":596,"h":596},"sourceSize":{"w":596,"h":596},"anchor":{"x":0.5,"y":0.87}},"sprite/tallplant/DawnCelestialPlatform":{"frame":{"x":2485,"y":2271,"w":596,"h":596},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":596,"h":596},"sourceSize":{"w":596,"h":596},"anchor":{"x":0.5,"y":0.87}},"sprite/tallplant/DawnCelestialPlatformTopmostLayer":{"frame":{"x":3085,"y":2271,"w":596,"h":596},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":596,"h":596},"sourceSize":{"w":596,"h":596},"anchor":{"x":0.5,"y":0.87}},"sprite/decor/ColoredStringLightsSideways":{"frame":{"x":3685,"y":2271,"w":122,"h":586},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":122,"h":586},"sourceSize":{"w":122,"h":586},"anchor":{"x":0.5,"y":0.76}},"sprite/decor/MarbleArchSideways":{"frame":{"x":3811,"y":2271,"w":97,"h":586},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":97,"h":586},"sourceSize":{"w":97,"h":586},"anchor":{"x":0.494845,"y":0.737201}},"sprite/decor/StringLightsSideways":{"frame":{"x":3912,"y":2271,"w":122,"h":586},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":122,"h":586},"sourceSize":{"w":122,"h":586},"anchor":{"x":0.5,"y":0.76}},"sprite/decor/StoneArchSideways":{"frame":{"x":4,"y":2895,"w":97,"h":583},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":97,"h":583},"sourceSize":{"w":97,"h":583},"anchor":{"x":0.484536,"y":0.737564}},"sprite/decor/DecorShed":{"frame":{"x":105,"y":2895,"w":280,"h":572},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":280,"h":572},"sourceSize":{"w":280,"h":572},"anchor":{"x":0.503571,"y":0.791}},"sprite/object/CollectorsClub":{"frame":{"x":389,"y":2895,"w":513,"h":572},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":513,"h":572},"sourceSize":{"w":513,"h":572},"anchor":{"x":0.5,"y":0.5}},"sprite/object/DecorShop":{"frame":{"x":906,"y":2895,"w":512,"h":572},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":512,"h":572},"sourceSize":{"w":512,"h":572},"anchor":{"x":0.5,"y":0.5}},"sprite/object/PetSeller":{"frame":{"x":1422,"y":2895,"w":512,"h":572},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":512,"h":572},"sourceSize":{"w":512,"h":572},"anchor":{"x":0.5,"y":0.5}},"sprite/object/Petstore":{"frame":{"x":1938,"y":2895,"w":512,"h":572},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":512,"h":572},"sourceSize":{"w":512,"h":572},"anchor":{"x":0.5,"y":0.5}},"sprite/object/Tile_SeedShop":{"frame":{"x":2454,"y":2895,"w":512,"h":572},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":512,"h":572},"sourceSize":{"w":512,"h":572},"anchor":{"x":0.5,"y":0.5}},"sprite/object/Tile_SellShop":{"frame":{"x":2970,"y":2895,"w":512,"h":572},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":512,"h":572},"sourceSize":{"w":512,"h":572},"anchor":{"x":0.5,"y":0.5}},"sprite/object/ToolShop":{"frame":{"x":3486,"y":2895,"w":513,"h":572},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":513,"h":572},"sourceSize":{"w":513,"h":572},"anchor":{"x":0.5,"y":0.5}},"sprite/pet/Cow":{"frame":{"x":4,"y":3482,"w":496,"h":549},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":496,"h":549},"sourceSize":{"w":496,"h":549},"anchor":{"x":0.491935,"y":0.985428}},"sprite/decor/WoodArchSide":{"frame":{"x":504,"y":3482,"w":173,"h":533},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":173,"h":533},"sourceSize":{"w":173,"h":533},"anchor":{"x":0.5,"y":0.716698}},"sprite/tallplant/StarweaverPlant":{"frame":{"x":681,"y":3482,"w":273,"h":516},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":273,"h":516},"sourceSize":{"w":273,"h":516},"anchor":{"x":0.5,"y":0.87}},"sprite/tallplant/StarweaverPlatform":{"frame":{"x":958,"y":3482,"w":272,"h":513},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":272,"h":513},"sourceSize":{"w":272,"h":513},"anchor":{"x":0.5,"y":0.87}},"sprite/object/Billboard":{"frame":{"x":1234,"y":3482,"w":498,"h":506},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":498,"h":506},"sourceSize":{"w":498,"h":506},"anchor":{"x":0.5,"y":0.5}},"sprite/pet/Goat":{"frame":{"x":1736,"y":3482,"w":401,"h":502},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":401,"h":502},"sourceSize":{"w":401,"h":502},"anchor":{"x":0.503741,"y":0.992032}},"sprite/plant/DragonfruitTree":{"frame":{"x":2141,"y":3482,"w":443,"h":499},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":443,"h":499},"sourceSize":{"w":443,"h":499},"anchor":{"x":0.52,"y":0.974576}},"sprite/pet/Capybara":{"frame":{"x":2588,"y":3482,"w":419,"h":498},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":419,"h":498},"sourceSize":{"w":419,"h":498},"anchor":{"x":0.501193,"y":0.977912}},"sprite/pet/Pig":{"frame":{"x":3011,"y":3482,"w":462,"h":496},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":462,"h":496},"sourceSize":{"w":462,"h":496},"anchor":{"x":0.506494,"y":0.989919}},"sprite/mutation/Ambercharged":{"frame":{"x":3477,"y":3482,"w":389,"h":488},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":389,"h":488},"sourceSize":{"w":389,"h":488},"anchor":{"x":0.501285,"y":0.795082}},"sprite/pet/Turkey":{"frame":{"x":4,"y":4035,"w":453,"h":486},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":453,"h":486},"sourceSize":{"w":453,"h":486},"anchor":{"x":0.485651,"y":0.99177}},"sprite/object/Gazebo":{"frame":{"x":461,"y":4035,"w":449,"h":485},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":449,"h":485},"sourceSize":{"w":449,"h":485},"anchor":{"x":0.5,"y":0.5}},"sprite/decor/PetHutch":{"frame":{"x":914,"y":4035,"w":326,"h":476},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":326,"h":476},"sourceSize":{"w":326,"h":476},"anchor":{"x":0.490798,"y":0.759925}},"sprite/decor/HayBale":{"frame":{"x":1244,"y":4035,"w":271,"h":472},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":271,"h":472},"sourceSize":{"w":271,"h":472},"anchor":{"x":0.5,"y":0.74}},"sprite/decor/HayBaleSideways":{"frame":{"x":1519,"y":4035,"w":271,"h":472},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":271,"h":472},"sourceSize":{"w":271,"h":472},"anchor":{"x":0.5,"y":0.74}},"sprite/pet/Stoat":{"frame":{"x":1794,"y":4035,"w":235,"h":472},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":235,"h":472},"sourceSize":{"w":235,"h":472},"anchor":{"x":0.489362,"y":0.991525}},"sprite/mutation/Dawncharged":{"frame":{"x":2033,"y":4035,"w":401,"h":466},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":401,"h":466},"sourceSize":{"w":401,"h":466},"anchor":{"x":0.518703,"y":0.796137}},"sprite/pet/Turtle":{"frame":{"x":2438,"y":4035,"w":494,"h":463},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":494,"h":463},"sourceSize":{"w":494,"h":463},"anchor":{"x":0.491903,"y":0.991361}},"sprite/plant/Hedge":{"frame":{"x":2936,"y":4035,"w":317,"h":462},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":317,"h":462},"sourceSize":{"w":317,"h":462},"anchor":{"x":0.496094,"y":0.726563}},"sprite/decor/MiniWizardTower":{"frame":{"x":3257,"y":4035,"w":198,"h":423},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":198,"h":423},"sourceSize":{"w":198,"h":423},"anchor":{"x":0.5,"y":0.82}},"sprite/decor/MarbleBridgeSideways":{"frame":{"x":3459,"y":4035,"w":192,"h":420},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":192,"h":420},"sourceSize":{"w":192,"h":420},"anchor":{"x":0.5,"y":0.66}},"sprite/decor/StoneBridgeSideways":{"frame":{"x":3655,"y":4035,"w":193,"h":420},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":193,"h":420},"sourceSize":{"w":193,"h":420},"anchor":{"x":0.5,"y":0.66}},"sprite/decor/WoodBridgeSideways":{"frame":{"x":3852,"y":4035,"w":192,"h":420},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":192,"h":420},"sourceSize":{"w":192,"h":420},"anchor":{"x":0.5,"y":0.66}},"sprite/pet/SnowFox":{"frame":{"x":4,"y":4525,"w":340,"h":413},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":340,"h":413},"sourceSize":{"w":340,"h":413},"anchor":{"x":0.441176,"y":0.980676}},"sprite/plant/Watermelon":{"frame":{"x":348,"y":4525,"w":410,"h":410},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":410,"h":410},"sourceSize":{"w":410,"h":410},"anchor":{"x":0.502439,"y":0.702439}},"sprite/pet/Chicken":{"frame":{"x":762,"y":4525,"w":348,"h":404},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":348,"h":404},"sourceSize":{"w":348,"h":404},"anchor":{"x":0.497126,"y":0.987624}},"sprite/decor/MarbleCaribou":{"frame":{"x":1114,"y":4525,"w":175,"h":403},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":175,"h":403},"sourceSize":{"w":175,"h":403},"anchor":{"x":0.528736,"y":0.8975}},"sprite/decor/MarbleFountain":{"frame":{"x":1293,"y":4525,"w":316,"h":400},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":316,"h":400},"sourceSize":{"w":316,"h":400},"anchor":{"x":0.5,"y":0.698758}},"sprite/plant/Delphinium":{"frame":{"x":1613,"y":4525,"w":218,"h":398},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":218,"h":398},"sourceSize":{"w":218,"h":398},"anchor":{"x":0.5,"y":0.90625}},"sprite/decor/StrawScarecrow":{"frame":{"x":1835,"y":4525,"w":246,"h":398},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":246,"h":398},"sourceSize":{"w":246,"h":398},"anchor":{"x":0.477124,"y":0.945378}},"sprite/decor/MarbleLampPost":{"frame":{"x":2085,"y":4525,"w":310,"h":395},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":310,"h":395},"sourceSize":{"w":310,"h":395},"anchor":{"x":0.5,"y":0.88}},"sprite/decor/StoneLampPost":{"frame":{"x":2399,"y":4525,"w":344,"h":388},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":344,"h":388},"sourceSize":{"w":344,"h":388},"anchor":{"x":0.498168,"y":0.88}},"sprite/decor/WoodLampPost":{"frame":{"x":2747,"y":4525,"w":344,"h":387},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":344,"h":387},"sourceSize":{"w":344,"h":387},"anchor":{"x":0.5,"y":0.88}},"sprite/plant/Pumpkin":{"frame":{"x":3095,"y":4525,"w":410,"h":383},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":410,"h":383},"sourceSize":{"w":410,"h":383},"anchor":{"x":0.495122,"y":0.718016}},"sprite/decor/WoodWindmill":{"frame":{"x":3509,"y":4525,"w":283,"h":381},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":283,"h":381},"sourceSize":{"w":283,"h":381},"anchor":{"x":0.502222,"y":0.834437}},"sprite/plant/PalmTreeTop":{"frame":{"x":4,"y":4942,"w":408,"h":377},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":408,"h":377},"sourceSize":{"w":408,"h":377},"anchor":{"x":0.5,"y":0.5}},"sprite/decor/WoodArch":{"frame":{"x":416,"y":4942,"w":296,"h":376},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":296,"h":376},"sourceSize":{"w":296,"h":376},"anchor":{"x":0.496622,"y":0.816489}},"sprite/decor/WoodBenchSideways":{"frame":{"x":716,"y":4942,"w":147,"h":375},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":147,"h":375},"sourceSize":{"w":147,"h":375},"anchor":{"x":0.591837,"y":0.650667}},"sprite/decor/StoneCaribou":{"frame":{"x":867,"y":4942,"w":169,"h":370},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":169,"h":370},"sourceSize":{"w":169,"h":370},"anchor":{"x":0.526627,"y":0.889189}},"sprite/decor/MarbleArch":{"frame":{"x":1040,"y":4942,"w":355,"h":355},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":355,"h":355},"sourceSize":{"w":355,"h":355},"anchor":{"x":0.501408,"y":0.797183}},"sprite/decor/StoneArch":{"frame":{"x":1399,"y":4942,"w":356,"h":355},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":356,"h":355},"sourceSize":{"w":356,"h":355},"anchor":{"x":0.5,"y":0.8}},"sprite/pet/Bunny":{"frame":{"x":1759,"y":4942,"w":250,"h":354},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":250,"h":354},"sourceSize":{"w":250,"h":354},"anchor":{"x":0.504,"y":0.974576}},"sprite/plant/Lily":{"frame":{"x":2013,"y":4942,"w":249,"h":353},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":249,"h":353},"sourceSize":{"w":249,"h":353},"anchor":{"x":0.519531,"y":0.773438}},"sprite/object/GazeboDome":{"frame":{"x":2266,"y":4942,"w":453,"h":347},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":453,"h":347},"sourceSize":{"w":453,"h":347},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/Aloe":{"frame":{"x":2723,"y":4942,"w":380,"h":344},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":380,"h":344},"sourceSize":{"w":380,"h":344},"anchor":{"x":0.5,"y":0.8}},"sprite/decor/Cauldron":{"frame":{"x":3107,"y":4942,"w":297,"h":341},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":297,"h":341},"sourceSize":{"w":297,"h":341},"anchor":{"x":0.5,"y":0.75}},"sprite/decor/MarbleBenchSideways":{"frame":{"x":3408,"y":4942,"w":123,"h":340},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":123,"h":340},"sourceSize":{"w":123,"h":340},"anchor":{"x":0.504065,"y":0.614706}},"sprite/decor/Birdhouse":{"frame":{"x":3535,"y":4942,"w":152,"h":336},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":152,"h":336},"sourceSize":{"w":152,"h":336},"anchor":{"x":0.513043,"y":0.89}},"sprite/decor/WoodCaribou":{"frame":{"x":3691,"y":4942,"w":164,"h":331},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":164,"h":331},"sourceSize":{"w":164,"h":331},"anchor":{"x":0.54878,"y":0.900302}},"sprite/mutation/Amberlit":{"frame":{"x":4,"y":5323,"w":468,"h":329},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":468,"h":329},"sourceSize":{"w":468,"h":329},"anchor":{"x":0.5,"y":0.82006}},"sprite/mutation/Dawnlit":{"frame":{"x":476,"y":5323,"w":468,"h":329},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":468,"h":329},"sourceSize":{"w":468,"h":329},"anchor":{"x":0.50641,"y":0.808511}},"sprite/plant/Shrub":{"frame":{"x":948,"y":5323,"w":285,"h":329},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":285,"h":329},"sourceSize":{"w":285,"h":329},"anchor":{"x":0.517544,"y":0.920973}},"sprite/decor/ColoredStringLights":{"frame":{"x":1237,"y":5323,"w":299,"h":325},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":299,"h":325},"sourceSize":{"w":299,"h":325},"anchor":{"x":0.5,"y":0.96615}},"sprite/decor/StringLights":{"frame":{"x":1540,"y":5323,"w":299,"h":325},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":299,"h":325},"sourceSize":{"w":299,"h":325},"anchor":{"x":0.5,"y":0.96615}},"sprite/object/Well":{"frame":{"x":1843,"y":5323,"w":258,"h":322},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":258,"h":322},"sourceSize":{"w":258,"h":322},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/Echeveria":{"frame":{"x":2105,"y":5323,"w":308,"h":316},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":308,"h":316},"sourceSize":{"w":308,"h":316},"anchor":{"x":0.503247,"y":0.688312}},"sprite/mutation/Puddle":{"frame":{"x":2417,"y":5323,"w":464,"h":314},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":464,"h":314},"sourceSize":{"w":464,"h":314},"anchor":{"x":0.49061,"y":0.506944}},"sprite/plant/Starweaver":{"frame":{"x":2885,"y":5323,"w":309,"h":309},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":309,"h":309},"sourceSize":{"w":309,"h":309},"anchor":{"x":0.4895,"y":0.459547}},"sprite/plant/BushyTree":{"frame":{"x":3198,"y":5323,"w":308,"h":308},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":308,"h":308},"sourceSize":{"w":308,"h":308},"anchor":{"x":0.493506,"y":0.55}},"sprite/plant/Carrot":{"frame":{"x":3510,"y":5323,"w":304,"h":308},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":304,"h":308},"sourceSize":{"w":304,"h":308},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/Corn":{"frame":{"x":4,"y":5656,"w":331,"h":307},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":331,"h":307},"sourceSize":{"w":331,"h":307},"anchor":{"x":0.492447,"y":0.811075}},"sprite/decor/StoneBenchSideways":{"frame":{"x":339,"y":5656,"w":117,"h":306},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":117,"h":306},"sourceSize":{"w":117,"h":306},"anchor":{"x":0.504274,"y":0.578431}},"sprite/decor/StoneBirdBath":{"frame":{"x":460,"y":5656,"w":151,"h":305},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":151,"h":305},"sourceSize":{"w":151,"h":305},"anchor":{"x":0.517483,"y":0.87}},"sprite/pet/Snail":{"frame":{"x":615,"y":5656,"w":236,"h":305},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":236,"h":305},"sourceSize":{"w":236,"h":305},"anchor":{"x":0.40678,"y":0.986885}},"sprite/plant/Mushroom":{"frame":{"x":855,"y":5656,"w":312,"h":302},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":312,"h":302},"sourceSize":{"w":312,"h":302},"anchor":{"x":0.503205,"y":0.82}},"sprite/decor/MarbleBridge":{"frame":{"x":1171,"y":5656,"w":286,"h":300},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":286,"h":300},"sourceSize":{"w":286,"h":300},"anchor":{"x":0.5,"y":0.78}},"sprite/decor/StoneBridge":{"frame":{"x":1461,"y":5656,"w":286,"h":300},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":286,"h":300},"sourceSize":{"w":286,"h":300},"anchor":{"x":0.5,"y":0.78}},"sprite/decor/WoodBridge":{"frame":{"x":1751,"y":5656,"w":286,"h":300},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":286,"h":300},"sourceSize":{"w":286,"h":300},"anchor":{"x":0.5,"y":0.78}},"sprite/decor/MarbleBlobling":{"frame":{"x":2041,"y":5656,"w":231,"h":294},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":231,"h":294},"sourceSize":{"w":231,"h":294},"anchor":{"x":0.484043,"y":0.86}},"sprite/pet/Bee":{"frame":{"x":2276,"y":5656,"w":267,"h":293},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":267,"h":293},"sourceSize":{"w":267,"h":293},"anchor":{"x":0.494382,"y":0.976109}},"sprite/pet/Squirrel":{"frame":{"x":2547,"y":5656,"w":258,"h":282},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":258,"h":282},"sourceSize":{"w":258,"h":282},"anchor":{"x":0.391473,"y":0.98227}},"sprite/pet/Worm":{"frame":{"x":2809,"y":5656,"w":251,"h":274},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":251,"h":274},"sourceSize":{"w":251,"h":274},"anchor":{"x":0.390438,"y":0.985401}},"sprite/pet/Dragonfly":{"frame":{"x":3064,"y":5656,"w":345,"h":272},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":345,"h":272},"sourceSize":{"w":345,"h":272},"anchor":{"x":0.498551,"y":0.955882}},"sprite/winter/SnowFootprints_1":{"frame":{"x":3413,"y":5656,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/winter/SnowFootprints_2":{"frame":{"x":3673,"y":5656,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/winter/SnowFootprints_3":{"frame":{"x":4,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-0":{"frame":{"x":264,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-1":{"frame":{"x":524,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-2":{"frame":{"x":784,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-3":{"frame":{"x":1044,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-4":{"frame":{"x":1304,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-5":{"frame":{"x":1564,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-6":{"frame":{"x":1824,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-7":{"frame":{"x":2084,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-8":{"frame":{"x":2344,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialActive-9":{"frame":{"x":2604,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-0":{"frame":{"x":2864,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-1":{"frame":{"x":3124,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-2":{"frame":{"x":3384,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-3":{"frame":{"x":3644,"y":5967,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-4":{"frame":{"x":4,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-5":{"frame":{"x":264,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-6":{"frame":{"x":524,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-7":{"frame":{"x":784,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-8":{"frame":{"x":1044,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/CelestialGrowing-9":{"frame":{"x":1304,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/DawnCelestialActivationTile":{"frame":{"x":1564,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/animation/MoonCelestialActivationTile":{"frame":{"x":1824,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.5}},"sprite/pet/Butterfly":{"frame":{"x":2084,"y":6227,"w":296,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":296,"h":256},"sourceSize":{"w":296,"h":256},"anchor":{"x":0.47973,"y":0.976563}},"sprite/plant/Apple":{"frame":{"x":2384,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.511719,"y":0.527344}},"sprite/plant/Daffodil":{"frame":{"x":2644,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.507813,"y":0.636719}},"sprite/plant/Sunflower":{"frame":{"x":2904,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.492188,"y":0.5}},"sprite/plant/Tulip":{"frame":{"x":3164,"y":6227,"w":256,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":256},"sourceSize":{"w":256,"h":256},"anchor":{"x":0.5,"y":0.695313}},"sprite/winter/SnowFootprints_4":{"frame":{"x":3424,"y":6227,"w":257,"h":256},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":257,"h":256},"sourceSize":{"w":257,"h":256},"anchor":{"x":0.52,"y":0.974576}},"sprite/decor/LargeGravestoneSideways":{"frame":{"x":3685,"y":6227,"w":64,"h":252},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":64,"h":252},"sourceSize":{"w":64,"h":252},"anchor":{"x":0.5,"y":0.757937}},"sprite/decor/MiniFairyKeep":{"frame":{"x":3753,"y":6227,"w":204,"h":252},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":204,"h":252},"sourceSize":{"w":204,"h":252},"anchor":{"x":0.514706,"y":0.79}},"sprite/plant/SproutFlower":{"frame":{"x":4,"y":6487,"w":252,"h":251},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":252,"h":251},"sourceSize":{"w":252,"h":251},"anchor":{"x":0.5,"y":0.53125}},"sprite/plant/FlowerBush":{"frame":{"x":260,"y":6487,"w":231,"h":249},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":231,"h":249},"sourceSize":{"w":231,"h":249},"anchor":{"x":0.502165,"y":0.55}},"sprite/plant/Grape":{"frame":{"x":495,"y":6487,"w":256,"h":247},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":247},"sourceSize":{"w":256,"h":247},"anchor":{"x":0.5,"y":0.5}},"sprite/decor/StoneGnome":{"frame":{"x":755,"y":6487,"w":178,"h":245},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":178,"h":245},"sourceSize":{"w":178,"h":245},"anchor":{"x":0.506173,"y":0.8}},"sprite/decor/MiniFairyForge":{"frame":{"x":937,"y":6487,"w":187,"h":240},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":187,"h":240},"sourceSize":{"w":187,"h":240},"anchor":{"x":0.492188,"y":0.74}},"sprite/plant/BabyCarrot":{"frame":{"x":1128,"y":6487,"w":191,"h":238},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":191,"h":238},"sourceSize":{"w":191,"h":238},"anchor":{"x":0.424084,"y":0.756303}},"sprite/decor/WoodBench":{"frame":{"x":1323,"y":6487,"w":258,"h":236},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":258,"h":236},"sourceSize":{"w":258,"h":236},"anchor":{"x":0.496124,"y":0.766949}},"sprite/mutation/Chilled":{"frame":{"x":1585,"y":6487,"w":306,"h":235},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":306,"h":235},"sourceSize":{"w":306,"h":235},"anchor":{"x":0.501961,"y":0.543147}},"sprite/mutation/Frozen-1":{"frame":{"x":1895,"y":6487,"w":290,"h":232},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":290,"h":232},"sourceSize":{"w":290,"h":232},"anchor":{"x":0.52,"y":0.974576}},"sprite/mutation/Frozen":{"frame":{"x":2189,"y":6487,"w":290,"h":232},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":290,"h":232},"sourceSize":{"w":290,"h":232},"anchor":{"x":0.5,"y":0.474138}},"sprite/decor/LargeGravestone":{"frame":{"x":2483,"y":6487,"w":155,"h":231},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":155,"h":231},"sourceSize":{"w":155,"h":231},"anchor":{"x":0.512987,"y":0.88}},"sprite/mutation/Wet":{"frame":{"x":2642,"y":6487,"w":310,"h":226},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":310,"h":226},"sourceSize":{"w":310,"h":226},"anchor":{"x":0.5,"y":0.486726}},"sprite/plant/Banana":{"frame":{"x":2956,"y":6487,"w":256,"h":226},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":226},"sourceSize":{"w":256,"h":226},"anchor":{"x":0.5,"y":0.5}},"sprite/decor/MediumGravestoneSideways":{"frame":{"x":3216,"y":6487,"w":64,"h":225},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":64,"h":225},"sourceSize":{"w":64,"h":225},"anchor":{"x":0.5,"y":0.71}},"sprite/plant/SproutVine":{"frame":{"x":3284,"y":6487,"w":244,"h":225},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":244,"h":225},"sourceSize":{"w":244,"h":225},"anchor":{"x":0.504098,"y":0.826667}},"sprite/plant/Poinsettia":{"frame":{"x":3532,"y":6487,"w":217,"h":214},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":217,"h":214},"sourceSize":{"w":217,"h":214},"anchor":{"x":0.520737,"y":0.476636}},"sprite/decor/LargeRock":{"frame":{"x":3753,"y":6487,"w":244,"h":213},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":244,"h":213},"sourceSize":{"w":244,"h":213},"anchor":{"x":0.5,"y":0.7}},"sprite/plant/SproutFruit":{"frame":{"x":4,"y":6742,"w":231,"h":212},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":231,"h":212},"sourceSize":{"w":231,"h":212},"anchor":{"x":0.506494,"y":0.53}},"sprite/plant/SproutVegetable":{"frame":{"x":239,"y":6742,"w":231,"h":209},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":231,"h":209},"sourceSize":{"w":231,"h":209},"anchor":{"x":0.493506,"y":0.574163}},"sprite/plant/Cacao":{"frame":{"x":474,"y":6742,"w":126,"h":207},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":126,"h":207},"sourceSize":{"w":126,"h":207},"anchor":{"x":0.496094,"y":0.496094}},"sprite/plant/MoonCelestialCrop":{"frame":{"x":604,"y":6742,"w":208,"h":206},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":208,"h":206},"sourceSize":{"w":208,"h":206},"anchor":{"x":0.5,"y":0.878641}},"sprite/plant/DawnCelestialCrop":{"frame":{"x":816,"y":6742,"w":205,"h":205},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":205,"h":205},"sourceSize":{"w":205,"h":205},"anchor":{"x":0.497561,"y":0.0634146}},"sprite/plant/DragonFruit":{"frame":{"x":1025,"y":6742,"w":205,"h":205},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":205,"h":205},"sourceSize":{"w":205,"h":205},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/BurrosTail":{"frame":{"x":1234,"y":6742,"w":126,"h":200},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":126,"h":200},"sourceSize":{"w":126,"h":200},"anchor":{"x":0.53125,"y":0.121094}},"sprite/decor/MarbleBench":{"frame":{"x":1364,"y":6742,"w":265,"h":197},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":265,"h":197},"sourceSize":{"w":265,"h":197},"anchor":{"x":0.501887,"y":0.720812}},"sprite/decor/MarbleBenchBackwards":{"frame":{"x":1633,"y":6742,"w":256,"h":196},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":256,"h":196},"sourceSize":{"w":256,"h":196},"anchor":{"x":0.503906,"y":0.719388}},"sprite/plant/Squash":{"frame":{"x":1893,"y":6742,"w":124,"h":196},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":124,"h":196},"sourceSize":{"w":124,"h":196},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/Trellis":{"frame":{"x":2021,"y":6742,"w":205,"h":195},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":205,"h":195},"sourceSize":{"w":205,"h":195},"anchor":{"x":0.5,"y":0.804688}},"sprite/decor/SmallGravestoneSideways":{"frame":{"x":2230,"y":6742,"w":64,"h":194},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":64,"h":194},"sourceSize":{"w":64,"h":194},"anchor":{"x":0.5,"y":0.751295}},"sprite/ui/InventoryBag":{"frame":{"x":2298,"y":6742,"w":192,"h":192},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":192,"h":192},"sourceSize":{"w":192,"h":192},"anchor":{"x":0.5,"y":0.5}},"sprite/pet/UncommonEgg":{"frame":{"x":2494,"y":6742,"w":147,"h":190},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":147,"h":190},"sourceSize":{"w":147,"h":190},"anchor":{"x":0.5,"y":0.72}},"sprite/decor/WoodOwl":{"frame":{"x":2645,"y":6742,"w":179,"h":190},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":179,"h":190},"sourceSize":{"w":179,"h":190},"anchor":{"x":0.5,"y":0.75}},"sprite/pet/CommonEgg":{"frame":{"x":2828,"y":6742,"w":145,"h":190},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":145,"h":190},"sourceSize":{"w":145,"h":190},"anchor":{"x":0.502439,"y":0.72}},"sprite/pet/LegendaryEgg":{"frame":{"x":2977,"y":6742,"w":145,"h":190},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":145,"h":190},"sourceSize":{"w":145,"h":190},"anchor":{"x":0.5,"y":0.72}},"sprite/pet/MythicalEgg":{"frame":{"x":3126,"y":6742,"w":145,"h":190},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":145,"h":190},"sourceSize":{"w":145,"h":190},"anchor":{"x":0.5,"y":0.72}},"sprite/pet/RareEgg":{"frame":{"x":3275,"y":6742,"w":146,"h":190},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":146,"h":190},"sourceSize":{"w":146,"h":190},"anchor":{"x":0.5,"y":0.72}},"sprite/pet/SnowEgg":{"frame":{"x":3425,"y":6742,"w":145,"h":190},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":145,"h":190},"sourceSize":{"w":145,"h":190},"anchor":{"x":0.5,"y":0.72}},"sprite/pet/WinterEgg":{"frame":{"x":3574,"y":6742,"w":145,"h":190},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":145,"h":190},"sourceSize":{"w":145,"h":190},"anchor":{"x":0.5,"y":0.72}},"sprite/decor/MediumGravestone":{"frame":{"x":3723,"y":6742,"w":155,"h":187},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":155,"h":187},"sourceSize":{"w":155,"h":187},"anchor":{"x":0.5,"y":0.86}},"sprite/plant/StemFlower":{"frame":{"x":3882,"y":6742,"w":167,"h":183},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":167,"h":183},"sourceSize":{"w":167,"h":183},"anchor":{"x":0.48503,"y":0.85}},"sprite/decor/MiniFairyCottage":{"frame":{"x":4,"y":6958,"w":127,"h":172},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":127,"h":172},"sourceSize":{"w":127,"h":172},"anchor":{"x":0.519685,"y":0.72}},"sprite/plant/Coconut":{"frame":{"x":135,"y":6958,"w":168,"h":168},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":168,"h":168},"sourceSize":{"w":168,"h":168},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/PassionFruit":{"frame":{"x":307,"y":6958,"w":168,"h":168},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":168,"h":168},"sourceSize":{"w":168,"h":168},"anchor":{"x":0.5,"y":0.5}},"sprite/item/PlanterPot":{"frame":{"x":479,"y":6958,"w":170,"h":164},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":170,"h":164},"sourceSize":{"w":170,"h":164},"anchor":{"x":0.5,"y":0.5}},"sprite/decor/MediumRock":{"frame":{"x":653,"y":6958,"w":203,"h":162},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":203,"h":162},"sourceSize":{"w":203,"h":162},"anchor":{"x":0.502463,"y":0.65}},"sprite/plant/Tomato":{"frame":{"x":860,"y":6958,"w":154,"h":155},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":154,"h":155},"sourceSize":{"w":154,"h":155},"anchor":{"x":0.5,"y":0.5}},"sprite/decor/SmallGravestone":{"frame":{"x":1018,"y":6958,"w":138,"h":151},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":138,"h":151},"sourceSize":{"w":138,"h":151},"anchor":{"x":0.50365,"y":0.82}},"sprite/decor/StoneBench":{"frame":{"x":1160,"y":6958,"w":257,"h":150},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":257,"h":150},"sourceSize":{"w":257,"h":150},"anchor":{"x":0.498054,"y":0.646667}},"sprite/decor/WoodBenchBackwards":{"frame":{"x":1421,"y":6958,"w":259,"h":150},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":259,"h":150},"sourceSize":{"w":259,"h":150},"anchor":{"x":0.5,"y":0.646667}},"sprite/plant/Camellia":{"frame":{"x":1684,"y":6958,"w":165,"h":147},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":165,"h":147},"sourceSize":{"w":165,"h":147},"anchor":{"x":0.503906,"y":0.554688}},"sprite/plant/Pepper":{"frame":{"x":1853,"y":6958,"w":154,"h":146},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":154,"h":146},"sourceSize":{"w":154,"h":146},"anchor":{"x":0.5,"y":0.148438}},"sprite/plant/FavaBean":{"frame":{"x":2011,"y":6958,"w":65,"h":141},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":65,"h":141},"sourceSize":{"w":65,"h":141},"anchor":{"x":0.5,"y":0.5}},"sprite/item/Shovel":{"frame":{"x":2080,"y":6958,"w":131,"h":136},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":131,"h":136},"sourceSize":{"w":131,"h":136},"anchor":{"x":0.5,"y":0.5}},"sprite/item/WateringCan":{"frame":{"x":2215,"y":6958,"w":150,"h":134},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":150,"h":134},"sourceSize":{"w":150,"h":134},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/Strawberry":{"frame":{"x":2369,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Aloe":{"frame":{"x":2501,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Apple":{"frame":{"x":2633,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Bamboo":{"frame":{"x":2765,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Banana":{"frame":{"x":2897,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Blueberry":{"frame":{"x":3029,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/BurrosTail":{"frame":{"x":3161,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Cacao":{"frame":{"x":3293,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Cactus":{"frame":{"x":3425,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Camellia":{"frame":{"x":3557,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Carrot":{"frame":{"x":3689,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Chrysanthemum":{"frame":{"x":3821,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Coconut":{"frame":{"x":3953,"y":6958,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Corn":{"frame":{"x":4,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Daffodil":{"frame":{"x":136,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/DawnCelestial":{"frame":{"x":268,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Delphinium":{"frame":{"x":400,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/DragonFruit":{"frame":{"x":532,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Echeveria":{"frame":{"x":664,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/FavaBean":{"frame":{"x":796,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Grape":{"frame":{"x":928,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Lemon":{"frame":{"x":1060,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Lily":{"frame":{"x":1192,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Lychee":{"frame":{"x":1324,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/MoonCelestial":{"frame":{"x":1456,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Mushroom":{"frame":{"x":1588,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/PassionFruit":{"frame":{"x":1720,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Pepper":{"frame":{"x":1852,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Pinecone":{"frame":{"x":1984,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.52,"y":0.974576}},"sprite/seed/Poinsettia":{"frame":{"x":2116,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.52,"y":0.974576}},"sprite/seed/Pumpkin":{"frame":{"x":2248,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Squash":{"frame":{"x":2380,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Starweaver":{"frame":{"x":2512,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Strawberry":{"frame":{"x":2644,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Sunflower":{"frame":{"x":2776,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Tomato":{"frame":{"x":2908,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Tulip":{"frame":{"x":3040,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/seed/Watermelon":{"frame":{"x":3172,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/JournalStamp":{"frame":{"x":3304,"y":7134,"w":128,"h":128},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":128,"h":128},"sourceSize":{"w":128,"h":128},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/DirtPatch":{"frame":{"x":3436,"y":7134,"w":144,"h":127},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":144,"h":127},"sourceSize":{"w":144,"h":127},"anchor":{"x":0.495146,"y":0.475138}},"sprite/plant/Blueberry":{"frame":{"x":3584,"y":7134,"w":118,"h":120},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":118,"h":120},"sourceSize":{"w":118,"h":120},"anchor":{"x":0.5,"y":0.5}},"sprite/item/AmberlitPotion":{"frame":{"x":3706,"y":7134,"w":83,"h":119},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":83,"h":119},"sourceSize":{"w":83,"h":119},"anchor":{"x":0.5,"y":0.5}},"sprite/item/ChilledPotion":{"frame":{"x":3793,"y":7134,"w":83,"h":119},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":83,"h":119},"sourceSize":{"w":83,"h":119},"anchor":{"x":0.5,"y":0.5}},"sprite/item/DawnlitPotion":{"frame":{"x":3880,"y":7134,"w":83,"h":119},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":83,"h":119},"sourceSize":{"w":83,"h":119},"anchor":{"x":0.5,"y":0.5}},"sprite/item/FrozenPotion":{"frame":{"x":3967,"y":7134,"w":83,"h":119},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":83,"h":119},"sourceSize":{"w":83,"h":119},"anchor":{"x":0.5,"y":0.5}},"sprite/item/GoldPotion":{"frame":{"x":4,"y":7266,"w":83,"h":119},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":83,"h":119},"sourceSize":{"w":83,"h":119},"anchor":{"x":0.5,"y":0.5}},"sprite/item/RainbowPotion":{"frame":{"x":91,"y":7266,"w":83,"h":119},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":83,"h":119},"sourceSize":{"w":83,"h":119},"anchor":{"x":0.5,"y":0.5}},"sprite/item/WetPotion":{"frame":{"x":178,"y":7266,"w":83,"h":119},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":83,"h":119},"sourceSize":{"w":83,"h":119},"anchor":{"x":0.5,"y":0.5}},"sprite/decor/SmallRock":{"frame":{"x":265,"y":7266,"w":133,"h":115},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":133,"h":115},"sourceSize":{"w":133,"h":115},"anchor":{"x":0.496241,"y":0.65}},"sprite/plant/Lemon":{"frame":{"x":402,"y":7266,"w":116,"h":113},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":116,"h":113},"sourceSize":{"w":116,"h":113},"anchor":{"x":0.5,"y":0.5}},"sprite/plant/Chrysanthemum":{"frame":{"x":522,"y":7266,"w":132,"h":105},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":132,"h":105},"sourceSize":{"w":132,"h":105},"anchor":{"x":0.5,"y":0.570313}},"sprite/plant/Lychee":{"frame":{"x":658,"y":7266,"w":94,"h":98},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":94,"h":98},"sourceSize":{"w":94,"h":98},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/ActivityLog":{"frame":{"x":756,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/AmberMoonIcon":{"frame":{"x":856,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/Coin":{"frame":{"x":956,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/DawnIcon":{"frame":{"x":1056,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/Dirt":{"frame":{"x":1156,"y":7266,"w":97,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":97,"h":96},"sourceSize":{"w":97,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/Donut":{"frame":{"x":1257,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/EggsRestocked":{"frame":{"x":1357,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/FrostIcon":{"frame":{"x":1457,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/Leaderboard":{"frame":{"x":1557,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/MoneyBag":{"frame":{"x":1657,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/RainIcon":{"frame":{"x":1757,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/SeedsRestocked":{"frame":{"x":1857,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/Stats":{"frame":{"x":1957,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/SunnyIcon":{"frame":{"x":2057,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/ToolsRestocked":{"frame":{"x":2157,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/Touchpad":{"frame":{"x":2257,"y":7266,"w":96,"h":96},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":96,"h":96},"sourceSize":{"w":96,"h":96},"anchor":{"x":0.5,"y":0.5}},"sprite/decor/MiniWizardTowerOrnamentAmberMoon":{"frame":{"x":2357,"y":7266,"w":71,"h":87},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":71,"h":87},"sourceSize":{"w":71,"h":87},"anchor":{"x":0.63,"y":4.24}},"sprite/decor/MiniWizardTowerOrnamentDawn":{"frame":{"x":2432,"y":7266,"w":71,"h":87},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":71,"h":87},"sourceSize":{"w":71,"h":87},"anchor":{"x":0.63,"y":4.24}},"sprite/ui/ArrowKeys":{"frame":{"x":2507,"y":7266,"w":94,"h":62},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":94,"h":62},"sourceSize":{"w":94,"h":62},"anchor":{"x":0.5,"y":0.5}},"sprite/ui/CoinBag":{"frame":{"x":2605,"y":7266,"w":48,"h":48},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":48,"h":48},"sourceSize":{"w":48,"h":48},"anchor":{"x":0.5,"y":0.5}},"sprite/item/SnowBall":{"frame":{"x":2657,"y":7266,"w":45,"h":45},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":45,"h":45},"sourceSize":{"w":45,"h":45},"anchor":{"x":0.5,"y":0.5}},"sprite/item/SnowSplat":{"frame":{"x":2706,"y":7266,"w":44,"h":28},"rotated":false,"trimmed":false,"spriteSourceSize":{"x":0,"y":0,"w":44,"h":28},"sourceSize":{"w":44,"h":28},"anchor":{"x":0.5,"y":0.5}}},"meta":{"app":"flat-atlas","version":"1.0","image":"flat-sprites.webp","format":"RGBA8888","size":{"w":4096,"h":7387},"scale":"1"}}
+</script>
+  <!-- INLINE_ATLASES_END -->
+
+
+
+
+
+
+  <script>
+    const ASSETS_URL = "./assets";
+    const ATLAS_0 = getInlineJson("atlasFlat");
+    const ATLAS_1 = { frames: {} };
+    const SHEET_0_SRC = ASSETS_URL + "/flat-sprites.webp";
+    const SHEET_1_SRC = ASSETS_URL + "/flat-sprites.webp";
+    const SHEET_0_FALLBACK = null;
+    const SHEET_1_FALLBACK = null;
+
+    function getInlineDataUrl(id) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const raw = el.textContent || "";
+      const cleaned = raw.replace(/\s+/g, "");
+      if (!cleaned) return null;
+      return "data:image/webp;base64," + cleaned;
+    }
+
+    function getInlineJson(id) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const raw = el.textContent || "";
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      try {
+        return JSON.parse(trimmed);
+      } catch (err) {
+        console.warn("Failed to parse inline JSON", id, err);
+        return null;
+      }
+    }
+
+    const MUT_META = {
+      Gold: { overlayTall: null, tallIconOverride: null },
+      Rainbow: { overlayTall: null, tallIconOverride: null, angle: 130, angleTall: 0 },
+      Wet: { overlayTall: "sprite/mutation-overlay/WetTallPlant", tallIconOverride: "sprite/mutation/Puddle" },
+      Chilled: { overlayTall: "sprite/mutation-overlay/ChilledTallPlant", tallIconOverride: null },
+      Frozen: { overlayTall: "sprite/mutation-overlay/FrozenTallPlant", tallIconOverride: null },
+      Dawnlit: { overlayTall: null, tallIconOverride: null },
+      Ambershine: { overlayTall: null, tallIconOverride: null },
+      Dawncharged: { overlayTall: null, tallIconOverride: null },
+      Ambercharged: { overlayTall: null, tallIconOverride: null }
+    };
+
+    const MUTATION_ORDER = [
+      "Gold",
+      "Rainbow",
+      "Wet",
+      "Chilled",
+      "Frozen",
+      "Ambershine",
+      "Dawnlit",
+      "Dawncharged",
+      "Ambercharged"
+    ];
+
+    const MUT_ICON_Y_EXCEPT = {
+      Banana: 0.6,
+      Carrot: 0.6,
+      Sunflower: 0.5,
+      Starweaver: 0.5,
+      FavaBean: 0.25,
+      BurrosTail: 0.2
+    };
+
+    const MUT_ICON_X_EXCEPT = {
+      Pepper: 0.5,
+      Banana: 0.6
+    };
+
+    const FLOATING_MUTATION_ICONS = new Set([
+      "Dawnlit",
+      "Ambershine",
+      "Dawncharged",
+      "Ambercharged"
+    ]);
+
+    const FILTERS = {
+      Gold: { op: "source-atop", colors: ["rgb(235,200,0)"], a: 0.7 },
+      Rainbow: {
+        op: "color",
+        colors: ["#FF1744", "#FF9100", "#FFEA00", "#00E676", "#2979FF", "#D500F9"],
+        ang: 130,
+        angTall: 0,
+        masked: true
+      },
+      Wet: { op: "source-atop", colors: ["rgb(50,180,200)"], a: 0.25 },
+      Chilled: { op: "source-atop", colors: ["rgb(100,160,210)"], a: 0.45 },
+      Frozen: { op: "source-atop", colors: ["rgb(100,130,220)"], a: 0.5 },
+      Dawnlit: { op: "source-atop", colors: ["rgb(209,70,231)"], a: 0.5 },
+      Ambershine: { op: "source-atop", colors: ["rgb(190,100,40)"], a: 0.5 },
+      Dawncharged: { op: "source-atop", colors: ["rgb(140,80,200)"], a: 0.5 },
+      Ambercharged: { op: "source-atop", colors: ["rgb(170,60,25)"], a: 0.5 }
+    };
+
+    const MUTATION_INDEX = new Map(MUTATION_ORDER.map((m, idx) => [m, idx]));
+
+    const TILE_SIZE_WORLD = 256;
+    const BASE_ICON_SCALE = 0.5;
+    const TALL_PLANT_MUTATION_ICON_SCALE_BOOST = 2;
+
+    function sortMutations(list) {
+      const uniq = [...new Set(list.filter(Boolean))];
+      return uniq.sort((a, b) => (MUTATION_INDEX.get(a) ?? 999) - (MUTATION_INDEX.get(b) ?? 999));
+    }
+
+    function normalizeMutListColor(list) {
+      const names = list.filter((m, idx, arr) => MUT_META[m] && arr.indexOf(m) === idx);
+      if (!names.length) return [];
+      if (names.includes("Gold")) return ["Gold"];
+      if (names.includes("Rainbow")) return ["Rainbow"];
+
+      const warm = ["Ambershine", "Dawnlit", "Dawncharged", "Ambercharged"];
+      const hasWarm = names.some((n) => warm.includes(n));
+      if (hasWarm) {
+        return sortMutations(names.filter((n) => !["Wet", "Chilled", "Frozen"].includes(n)));
+      }
+      return sortMutations(names);
+    }
+
+    function normalizeMutListOverlay(list) {
+      const names = list.filter((m, idx, arr) => MUT_META[m]?.overlayTall && arr.indexOf(m) === idx);
+      return sortMutations(names);
+    }
+
+    function computeVariantSignature(mutations) {
+      if (!mutations.length) return { muts: [], overlayMuts: [], selectedMuts: [], sig: "" };
+      const selected = sortMutations(mutations);
+      const muts = normalizeMutListColor(mutations);
+      const overlayMuts = normalizeMutListOverlay(mutations);
+      return {
+        muts: muts,
+        overlayMuts: overlayMuts,
+        selectedMuts: selected,
+        sig: selected.join(",") + "|" + muts.join(",") + "|" + overlayMuts.join(",")
+      };
+    }
+
+    function buildMutationPipeline(mutNames, isTall) {
+      return mutNames.map((m) => ({
+        name: m,
+        meta: MUT_META[m],
+        overlayTall: MUT_META[m]?.overlayTall ?? null,
+        isTall: isTall
+      }));
+    }
+
+    function isTallKey(key) {
+      return /tallplant/i.test(key);
+    }
+
+    function baseNameOf(key) {
+      const parts = String(key || "").split("/");
+      return parts[parts.length - 1] || "";
+    }
+
+    function mutationAliases(mut) {
+      switch (mut) {
+        case "Ambershine":
+          return ["Ambershine", "Amberlit"];
+        case "Dawncharged":
+          return ["Dawncharged", "Dawnbound"];
+        case "Ambercharged":
+          return ["Ambercharged", "Amberbound"];
+        default:
+          return [mut];
+      }
+    }
+
+    function findOverlayKey(itemKey, mutName, textures, preferTall) {
+      if (!mutName) return null;
+      const base = baseNameOf(itemKey);
+      const aliases = mutationAliases(mutName);
+
+      for (const name of aliases) {
+        const tries = [
+          "sprite/mutation/" + name + base,
+          "sprite/mutation/" + name + "-" + base,
+          "sprite/mutation/" + name + "_" + base,
+          "sprite/mutation/" + name + "/" + base,
+          "sprite/mutation/" + name
+        ];
+        for (const k of tries) {
+          if (textures.has(k)) return k;
+        }
+
+        if (preferTall) {
+          const tallKey = "sprite/mutation-overlay/" + name + "TallPlant";
+          if (textures.has(tallKey)) return tallKey;
+          const altKey = "sprite/mutation-overlay/" + name;
+          if (textures.has(altKey)) return altKey;
+
+          for (const k of textures.keys()) {
+            const m = /sprite\/mutation-overlay\/([A-Za-z0-9]+)TallPlant/i.exec(String(k));
+            if (!m || !m[1]) continue;
+            if (m[1].toLowerCase() === name.toLowerCase()) return k;
+          }
+        }
+      }
+
+      return null;
+    }
+
+    function findIconKey(itemKey, mutName, isTall, textures) {
+      if (!mutName) return null;
+      const meta = MUT_META[mutName];
+      if (isTall && meta?.tallIconOverride && textures.has(meta.tallIconOverride)) {
+        return meta.tallIconOverride;
+      }
+
+      const base = baseNameOf(itemKey);
+      const aliases = mutationAliases(mutName);
+
+      for (const name of aliases) {
+        const tries = [
+          "sprite/mutation/" + name + "Icon",
+          "sprite/mutation/" + name,
+          "sprite/mutation/" + name + base,
+          "sprite/mutation/" + name + "-" + base,
+          "sprite/mutation/" + name + "_" + base,
+          "sprite/mutation/" + name + "/" + base
+        ];
+        for (const k of tries) {
+          if (textures.has(k)) return k;
+        }
+
+        if (isTall) {
+          const tallIconKey = "sprite/mutation-overlay/" + name + "TallPlantIcon";
+          if (textures.has(tallIconKey)) return tallIconKey;
+          const tallKey = "sprite/mutation-overlay/" + name + "TallPlant";
+          if (textures.has(tallKey)) return tallKey;
+        }
+      }
+
+      return null;
+    }
+
+    function computeIconLayout(baseFrame, isTall) {
+      const width = baseFrame.sourceSize?.w ?? baseFrame.frame?.w ?? 1;
+      const height = baseFrame.sourceSize?.h ?? baseFrame.frame?.h ?? 1;
+      const anchorX = baseFrame.anchor?.x ?? 0;
+      const anchorY = baseFrame.anchor?.y ?? 0;
+
+      const baseName = baseNameOf(baseFrame.__key || "");
+      const targetX = MUT_ICON_X_EXCEPT[baseName] ?? anchorX;
+      const isVerticalShape = height > width * 1.5;
+      const targetY = MUT_ICON_Y_EXCEPT[baseName] ?? (isVerticalShape ? anchorY : 0.4);
+
+      const offset = {
+        x: (targetX - anchorX) * width,
+        y: (targetY - anchorY) * height
+      };
+
+      const minDimension = Math.min(width, height);
+      const scaleFactor = Math.min(1.5, minDimension / TILE_SIZE_WORLD);
+      let iconScale = BASE_ICON_SCALE * scaleFactor;
+      if (isTall) iconScale = iconScale * TALL_PLANT_MUTATION_ICON_SCALE_BOOST;
+
+      return { width: width, height: height, anchorX: anchorX, anchorY: anchorY, offset: offset, iconScale: iconScale };
+    }
+
+    function angleGrad(ctx, w, h, ang, fullSpan) {
+      const rad = ((ang - 90) * Math.PI) / 180;
+      const cx = w / 2;
+      const cy = h / 2;
+      if (!fullSpan) {
+        const r2 = Math.min(w, h) / 2;
+        return ctx.createLinearGradient(
+          cx - Math.cos(rad) * r2,
+          cy - Math.sin(rad) * r2,
+          cx + Math.cos(rad) * r2,
+          cy + Math.sin(rad) * r2
+        );
+      }
+      const dx = Math.cos(rad);
+      const dy = Math.sin(rad);
+      const r = (Math.abs(dx) * w) / 2 + (Math.abs(dy) * h) / 2;
+      return ctx.createLinearGradient(cx - dx * r, cy - dy * r, cx + dx * r, cy + dy * r);
+    }
+
+    function fillGrad(ctx, w, h, f, fullSpan) {
+      const cols = f.colors?.length ? f.colors : ["#fff"];
+      const g = f.ang != null ? angleGrad(ctx, w, h, f.ang, fullSpan) : ctx.createLinearGradient(0, 0, 0, h);
+      if (cols.length === 1) {
+        g.addColorStop(0, cols[0]);
+        g.addColorStop(1, cols[0]);
+      } else {
+        cols.forEach((c, i) => g.addColorStop(i / (cols.length - 1), c));
+      }
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    const SUPPORTED_BLEND_OPS = (() => {
+      try {
+        const c = document.createElement("canvas");
+        const g = c.getContext("2d");
+        if (!g) return new Set();
+
+        const ops = ["color", "hue", "saturation", "luminosity", "overlay", "screen", "lighter", "source-atop"];
+        const ok = new Set();
+        for (const op of ops) {
+          g.globalCompositeOperation = op;
+          if (g.globalCompositeOperation === op) ok.add(op);
+        }
+        return ok;
+      } catch {
+        return new Set();
+      }
+    })();
+
+    function pickBlendOp(desired) {
+      if (SUPPORTED_BLEND_OPS.has(desired)) return desired;
+      if (SUPPORTED_BLEND_OPS.has("overlay")) return "overlay";
+      if (SUPPORTED_BLEND_OPS.has("screen")) return "screen";
+      if (SUPPORTED_BLEND_OPS.has("lighter")) return "lighter";
+      return "source-atop";
+    }
+
+    function applyFilterOnto(ctx, sourceCanvas, name, isTall) {
+      const base = FILTERS[name];
+      if (!base) return;
+
+      const f = { ...base };
+      if (name === "Rainbow" && isTall && f.angTall != null) {
+        f.ang = f.angTall;
+      }
+
+      const fullSpan = name === "Rainbow" && isTall;
+      const w = sourceCanvas.width;
+      const h = sourceCanvas.height;
+
+      ctx.save();
+      const blendOp = f.masked ? pickBlendOp(f.op) : "source-in";
+      ctx.globalCompositeOperation = blendOp;
+      if (f.a != null) ctx.globalAlpha = f.a;
+
+      if (f.masked) {
+        const m = document.createElement("canvas");
+        m.width = w;
+        m.height = h;
+        const mctx = m.getContext("2d");
+        mctx.imageSmoothingEnabled = false;
+        fillGrad(mctx, w, h, f, fullSpan);
+        mctx.globalCompositeOperation = "destination-in";
+        mctx.drawImage(sourceCanvas, 0, 0);
+        ctx.drawImage(m, 0, 0);
+      } else {
+        fillGrad(ctx, w, h, f, fullSpan);
+      }
+      ctx.restore();
+    }
+
+    const statusEl = document.getElementById("status");
+    const metaEl = document.getElementById("meta");
+    const previewWrap = document.getElementById("previewCanvas");
+    const categoryEl = document.getElementById("category");
+    const spriteEl = document.getElementById("sprite");
+    const searchEl = document.getElementById("search");
+    const scaleEl = document.getElementById("scale");
+    const mutationListEl = document.getElementById("mutationList");
+    const optIconsEl = document.getElementById("optIcons");
+    const optOverlaysEl = document.getElementById("optOverlays");
+    const downloadEl = document.getElementById("download");
+    const copyEl = document.getElementById("copy");
+
+    const frameIndex = new Map();
+    const categoryIndex = new Map();
+    const frameCanvasCache = new Map();
+    let sheetImages = [];
+    let lastRender = null;
+
+    function addCategoryEntry(category, name, key) {
+      if (!categoryIndex.has(category)) categoryIndex.set(category, []);
+      categoryIndex.get(category).push({ name: name, key: key });
+    }
+
+    function buildIndex(atlas, sheetIndex) {
+      const frames = atlas.frames || {};
+      Object.keys(frames).forEach((key) => {
+        const data = frames[key];
+        data.__key = key;
+        data.__sheet = sheetIndex;
+        frameIndex.set(key, data);
+
+        if (key.startsWith("sprite/")) {
+          const tail = key.slice("sprite/".length);
+          const parts = tail.split("/");
+          const category = parts[0];
+          const name = parts.slice(1).join("/");
+          addCategoryEntry(category, name, key);
+        }
+      });
+    }
+
+    function loadImageWithFallback(primarySrc, fallbackSrc) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        let triedFallback = false;
+        img.onload = () => resolve(img);
+        img.onerror = () => {
+          if (!triedFallback && fallbackSrc) {
+            triedFallback = true;
+            img.src = fallbackSrc;
+            return;
+          }
+          reject(new Error("Failed to load image"));
+        };
+        img.src = primarySrc;
+      });
+    }
+
+    function drawFrameToCanvas(frameData) {
+      const fr = frameData.frame;
+      const sss = frameData.spriteSourceSize || { x: 0, y: 0, w: fr.w, h: fr.h };
+      const srcSize = frameData.sourceSize || { w: fr.w, h: fr.h };
+      const img = sheetImages[frameData.__sheet];
+
+      const canvas = document.createElement("canvas");
+      canvas.width = srcSize.w;
+      canvas.height = srcSize.h;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+
+      if (frameData.rotated) {
+        const drawW = fr.h;
+        const drawH = fr.w;
+        ctx.save();
+        ctx.translate(sss.x + drawW / 2, sss.y + drawH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.drawImage(img, fr.x, fr.y, fr.w, fr.h, -drawW / 2, -drawH / 2, drawW, drawH);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, fr.x, fr.y, fr.w, fr.h, sss.x, sss.y, fr.w, fr.h);
+      }
+
+      return canvas;
+    }
+
+    function getFrameCanvas(key) {
+      if (frameCanvasCache.has(key)) return frameCanvasCache.get(key);
+      const frameData = frameIndex.get(key);
+      if (!frameData) return null;
+      const canvas = drawFrameToCanvas(frameData);
+      frameCanvasCache.set(key, canvas);
+      return canvas;
+    }
+
+    function renderSprite(key, mutations, scale, useIcons, useOverlays) {
+      const frameData = frameIndex.get(key);
+      if (!frameData) return null;
+
+      const baseCanvas = getFrameCanvas(key);
+      if (!baseCanvas) return null;
+
+      const out = document.createElement("canvas");
+      out.width = baseCanvas.width;
+      out.height = baseCanvas.height;
+      const octx = out.getContext("2d");
+      octx.imageSmoothingEnabled = false;
+      const isTall = isTallKey(key);
+      const variant = computeVariantSignature(mutations);
+      const pipeline = buildMutationPipeline(variant.muts, isTall);
+
+      let icons = [];
+      let floating = [];
+      let iconLayout = null;
+      let basePos = null;
+
+      if (useIcons) {
+        iconLayout = computeIconLayout(frameData, isTall);
+        const anchorX = frameData.anchor?.x ?? 0.5;
+        const anchorY = frameData.anchor?.y ?? 0.5;
+        basePos = { x: out.width * anchorX, y: out.height * anchorY };
+
+        for (const mut of variant.selectedMuts) {
+          if (mut === "Gold" || mut === "Rainbow") continue;
+          const iconKey = findIconKey(key, mut, isTall, frameIndex);
+          if (!iconKey) continue;
+          const iconCanvas = getFrameCanvas(iconKey);
+          if (!iconCanvas) continue;
+          const iconFrame = frameIndex.get(iconKey);
+          const iAnchorX = iconFrame?.anchor?.x ?? 0.5;
+          const iAnchorY = iconFrame?.anchor?.y ?? 0.5;
+          const target = FLOATING_MUTATION_ICONS.has(mut) ? floating : icons;
+          target.push({ iconCanvas: iconCanvas, iAnchorX: iAnchorX, iAnchorY: iAnchorY });
+        }
+      }
+
+      function drawIcons(list) {
+        if (!iconLayout || !basePos) return;
+        for (const icon of list) {
+          const w = icon.iconCanvas.width * iconLayout.iconScale;
+          const h = icon.iconCanvas.height * iconLayout.iconScale;
+          const x = basePos.x + iconLayout.offset.x - icon.iAnchorX * w;
+          const y = basePos.y + iconLayout.offset.y - icon.iAnchorY * h;
+          octx.drawImage(icon.iconCanvas, x, y, w, h);
+        }
+      }
+
+      if (useIcons && isTall) {
+        drawIcons(icons);
+      }
+
+      octx.drawImage(baseCanvas, 0, 0);
+
+      for (const step of pipeline) {
+        const layer = document.createElement("canvas");
+        layer.width = baseCanvas.width;
+        layer.height = baseCanvas.height;
+        const lctx = layer.getContext("2d");
+        lctx.imageSmoothingEnabled = false;
+        lctx.drawImage(baseCanvas, 0, 0);
+        applyFilterOnto(lctx, layer, step.name, isTall);
+        octx.drawImage(layer, 0, 0);
+      }
+
+      if (useOverlays && isTall) {
+        const overlayPipeline = buildMutationPipeline(variant.overlayMuts, isTall);
+        const anchorX = frameData.anchor?.x ?? 0.5;
+        const anchorY = frameData.anchor?.y ?? 0.5;
+        const basePosX = out.width * anchorX;
+        const basePosY = out.height * anchorY;
+
+        for (const step of overlayPipeline) {
+          const overlayKey = findOverlayKey(key, step.name, frameIndex, true);
+          if (!overlayKey) continue;
+          const overlayCanvas = getFrameCanvas(overlayKey);
+          if (!overlayCanvas) continue;
+
+          const overlayFrame = frameIndex.get(overlayKey);
+          const oAnchorX = overlayFrame?.anchor?.x ?? 0.5;
+          const oAnchorY = overlayFrame?.anchor?.y ?? 0.5;
+
+          const ow = overlayCanvas.width;
+          const oh = overlayCanvas.height;
+          const overlayPosX = basePosX - anchorX * ow;
+          const overlayPosY = 0;
+
+          const masked = document.createElement("canvas");
+          masked.width = ow;
+          masked.height = oh;
+          const mctx = masked.getContext("2d");
+          mctx.imageSmoothingEnabled = false;
+          mctx.drawImage(overlayCanvas, 0, 0);
+          mctx.globalCompositeOperation = "destination-in";
+          mctx.drawImage(baseCanvas, -overlayPosX, -overlayPosY);
+
+          octx.drawImage(masked, overlayPosX, overlayPosY);
+        }
+      }
+
+      if (useIcons) {
+        if (!isTall) drawIcons(icons);
+        drawIcons(floating);
+      }
+
+      if (scale && scale !== 1) {
+        const scaled = document.createElement("canvas");
+        scaled.width = out.width * scale;
+        scaled.height = out.height * scale;
+        const sctx = scaled.getContext("2d");
+        sctx.imageSmoothingEnabled = false;
+        sctx.drawImage(out, 0, 0, scaled.width, scaled.height);
+        return scaled;
+      }
+
+      return out;
+    }
+
+    function buildMutationCheckboxes() {
+      mutationListEl.innerHTML = "";
+      MUTATION_ORDER.forEach((mut) => {
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = mut;
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(mut));
+        mutationListEl.appendChild(label);
+      });
+    }
+
+    function getSelectedMutations() {
+      const list = [];
+      mutationListEl.querySelectorAll("input[type=checkbox]").forEach((el) => {
+        if (el.checked) list.push(el.value);
+      });
+      return list;
+    }
+
+    function populateCategories() {
+      const cats = Array.from(categoryIndex.keys()).sort();
+      categoryEl.innerHTML = "";
+      cats.forEach((cat) => {
+        const opt = document.createElement("option");
+        opt.value = cat;
+        opt.textContent = cat;
+        categoryEl.appendChild(opt);
+      });
+    }
+
+    function populateSprites() {
+      const cat = categoryEl.value;
+      const query = searchEl.value.trim().toLowerCase();
+      const entries = (categoryIndex.get(cat) || []).slice();
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+
+      spriteEl.innerHTML = "";
+      for (const entry of entries) {
+        if (query && !entry.name.toLowerCase().includes(query)) continue;
+        const opt = document.createElement("option");
+        opt.value = entry.key;
+        opt.textContent = entry.name;
+        spriteEl.appendChild(opt);
+      }
+    }
+
+    function renderPreview() {
+      const key = spriteEl.value;
+      if (!key) return;
+
+      const muts = getSelectedMutations();
+      const scale = Number(scaleEl.value) || 1;
+      const useIcons = optIconsEl.checked;
+      const useOverlays = optOverlaysEl.checked;
+
+      const canvas = renderSprite(key, muts, scale, useIcons, useOverlays);
+      if (!canvas) return;
+      lastRender = canvas;
+
+      previewWrap.innerHTML = "";
+      previewWrap.appendChild(canvas);
+
+      const frame = frameIndex.get(key);
+      const size = canvas.width + "x" + canvas.height;
+      const baseW = frame?.sourceSize?.w ?? frame?.frame?.w;
+      const baseH = frame?.sourceSize?.h ?? frame?.frame?.h;
+      const baseSize = frame ? baseW + "x" + baseH : "?";
+      metaEl.textContent = "Key: " + key + " | Base: " + baseSize + " | Output: " + size;
+    }
+
+    async function init() {
+      try {
+        statusEl.textContent = "Loading sprites...";
+        const images = await Promise.all([loadImageWithFallback(SHEET_0_SRC, SHEET_0_FALLBACK), loadImageWithFallback(SHEET_1_SRC, SHEET_1_FALLBACK)]);
+        sheetImages = [images[0], images[1]];
+
+        let atlas0 = ATLAS_0;
+        let atlas1 = ATLAS_1;
+
+        if (!atlas0 || !atlas1) {
+          if (!ASSETS_URL) throw new Error("No atlas data available.");
+          const [a0, a1] = await Promise.all([
+            fetch(ASSETS_URL + "/sprites-0.json").then((r) => r.json()),
+            fetch(ASSETS_URL + "/sprites-1.json").then((r) => r.json())
+          ]);
+          atlas0 = a0;
+          atlas1 = a1;
+        }
+
+        buildIndex(atlas0, 0);
+        buildIndex(atlas1, 1);
+
+        buildMutationCheckboxes();
+        populateCategories();
+        populateSprites();
+        renderPreview();
+
+        statusEl.textContent = "Loaded " + frameIndex.size + " sprites.";
+      } catch (err) {
+        statusEl.textContent = "Failed to load sprites: " + (err && err.message ? err.message : err);
+        console.error(err);
+      }
+    }
+
+    categoryEl.addEventListener("change", () => {
+      populateSprites();
+      renderPreview();
+    });
+
+    searchEl.addEventListener("input", () => {
+      populateSprites();
+      renderPreview();
+    });
+
+    spriteEl.addEventListener("change", renderPreview);
+    mutationListEl.addEventListener("change", renderPreview);
+    scaleEl.addEventListener("input", renderPreview);
+    optIconsEl.addEventListener("change", renderPreview);
+    optOverlaysEl.addEventListener("change", renderPreview);
+
+    copyEl.addEventListener("click", async () => {
+      if (!lastRender) return;
+      try {
+        const url = lastRender.toDataURL("image/png");
+        await navigator.clipboard.writeText(url);
+        statusEl.textContent = "Data URL copied.";
+      } catch {
+        statusEl.textContent = "Copy failed.";
+      }
+    });
+
+    downloadEl.addEventListener("click", () => {
+      if (!lastRender) return;
+      try {
+        lastRender.toBlob((blob) => {
+          if (!blob) return;
+          const a = document.createElement("a");
+          const url = URL.createObjectURL(blob);
+          a.href = url;
+          a.download = "sprite.png";
+          a.click();
+          URL.revokeObjectURL(url);
+        }, "image/png");
+      } catch (err) {
+        if (err.name === "SecurityError") {
+          alert("Cannot download: Browser security blocks exporting tainted canvases from 'file://'.\n\nPlease run this tool via a local server (e.g. 'npx serve' or 'python -m http.server') to enable downloads.");
+        } else {
+          console.error(err);
+          statusEl.textContent = "Download failed.";
+        }
+      }
+    });
+
+    init();
+  </script>
+</body>
+
+</html>
