@@ -4,9 +4,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sprite Customizer</title>
+  <meta name="description"
+    content="Customise and download sprites from Magic Garden. Apply mutations like Gold, Rainbow, and more.">
+  <meta property="og:title" content="Magic Garden Sprite Customizer">
+  <meta property="og:description"
+    content="Customise and download sprites from Magic Garden. Apply mutations like Gold, Rainbow, and more.">
+  <meta property="og:type" content="website">
+  <title>Magic Garden Sprite Customizer</title>
   <style>
     :root {
+      /* Light Mode (Accessible via toggle) */
       --bg: #f4efe8;
       --panel: #fff8ee;
       --ink: #2a231e;
@@ -14,6 +21,20 @@
       --accent-2: #3b7a74;
       --muted: #746a5f;
       --border: #e3d7c8;
+      --canvas-bg: #ffffff;
+      --input-bg: #ffffff;
+    }
+
+    [data-theme="dark"] {
+      --bg: #1a1614;
+      --panel: #251f1c;
+      --ink: #e5ddd5;
+      --accent: #f08b6b;
+      --accent-2: #489a92;
+      --muted: #a39689;
+      --border: #3d342d;
+      --canvas-bg: #2a231e;
+      --input-bg: #3d342d;
     }
 
     * {
@@ -24,16 +45,21 @@
       margin: 0;
       font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
       color: var(--ink);
-      background:
-        radial-gradient(1200px 600px at 15% 10%, #fff6e5, transparent 60%),
-        radial-gradient(1200px 600px at 85% 0%, #f0f9f6, transparent 60%),
-        var(--bg);
+      background: var(--bg);
+      /* Subtle radial glows */
+      background-image:
+        radial-gradient(1200px 600px at 15% 10%, rgba(255, 246, 229, 0.1), transparent 60%),
+        radial-gradient(1200px 600px at 85% 0%, rgba(240, 249, 246, 0.1), transparent 60%);
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     header {
       padding: 18px 24px 12px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(90deg, #fff4e3, #f6fff9);
+      background: var(--panel);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     header h1 {
@@ -84,7 +110,12 @@
       padding: 8px 10px;
       border-radius: 8px;
       border: 1px solid var(--border);
-      background: #fff;
+      background: var(--input-bg);
+      color: var(--ink);
+    }
+
+    option {
+      background: var(--input-bg);
       color: var(--ink);
     }
 
@@ -139,6 +170,17 @@
       background: var(--accent-2);
     }
 
+    #themeToggle {
+      padding: 8px;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
     #previewWrap {
       display: grid;
       gap: 12px;
@@ -146,13 +188,14 @@
     }
 
     #previewCanvas {
-      background: #fff;
+      background: var(--canvas-bg);
       border-radius: 12px;
       border: 1px solid var(--border);
       padding: 16px;
       display: grid;
       place-items: center;
       min-height: 360px;
+      transition: background 0.3s ease;
     }
 
     #previewCanvas canvas {
@@ -178,8 +221,11 @@
 
 <body>
   <header>
-    <h1>Sprite Customizer</h1>
-    <p>All sprites embedded. Choose a category, apply mutations, then download.</p>
+    <div>
+      <h1>Sprite Customizer</h1>
+      <p>All sprites embedded. Choose a category, apply mutations, then download.</p>
+    </div>
+    <button id="themeToggle" title="Toggle Light/Dark Mode">🌙</button>
   </header>
   <main>
     <section class="panel" id="controls">
@@ -207,7 +253,6 @@
 
       <div class="actions">
         <button id="download">Download PNG</button>
-        <button id="copy" class="secondary">Copy Data URL</button>
       </div>
 
       <p class="meta" id="status">Loading sprites...</p>
@@ -610,7 +655,7 @@
     const optIconsEl = document.getElementById("optIcons");
     const optOverlaysEl = document.getElementById("optOverlays");
     const downloadEl = document.getElementById("download");
-    const copyEl = document.getElementById("copy");
+    const themeToggleEl = document.getElementById("themeToggle");
 
     const frameIndex = new Map();
     const categoryIndex = new Map();
@@ -951,15 +996,11 @@
     optIconsEl.addEventListener("change", renderPreview);
     optOverlaysEl.addEventListener("change", renderPreview);
 
-    copyEl.addEventListener("click", async () => {
-      if (!lastRender) return;
-      try {
-        const url = lastRender.toDataURL("image/png");
-        await navigator.clipboard.writeText(url);
-        statusEl.textContent = "Data URL copied.";
-      } catch {
-        statusEl.textContent = "Copy failed.";
-      }
+    themeToggleEl.addEventListener("click", () => {
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      const newTheme = isDark ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      themeToggleEl.textContent = newTheme === "dark" ? "🌙" : "☀️";
     });
 
 
@@ -984,6 +1025,10 @@
         }
       }
     });
+
+    // Default to dark mode
+    document.documentElement.setAttribute("data-theme", "dark");
+    themeToggleEl.textContent = "🌙";
 
     init();
   </script>
