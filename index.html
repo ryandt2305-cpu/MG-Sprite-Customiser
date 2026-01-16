@@ -197,13 +197,24 @@
       place-items: center;
       min-height: 360px;
       transition: background 0.3s ease;
+      touch-action: none;
+      /* Prevent browser scrolling during drag */
     }
 
     #previewCanvas canvas {
-      image-rendering: pixelated;
       max-width: 100%;
       max-height: 70vh;
       object-fit: contain;
+    }
+
+    button.danger {
+      background: #ff4d4d;
+      color: white;
+      border-color: #ff3333;
+    }
+
+    button.danger:hover {
+      background: #ff3333;
     }
 
     .meta {
@@ -213,6 +224,51 @@
 
     .meta strong {
       color: var(--ink);
+    }
+
+    .slots {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .slot-btn {
+      flex: 1;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--input-bg);
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .slot-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .slot-btn.occupied:not(.active) {
+      border-color: var(--accent-2);
+      color: var(--accent-2);
+    }
+
+    #customTintControls {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 8px;
+    }
+
+    [data-theme="dark"] #customTintControls {
+      background: rgba(255, 255, 255, 0.03);
     }
 
     @media (max-width: 900px) {
@@ -234,6 +290,15 @@
   <main>
     <section class="panel" id="controls">
       <h2>Controls</h2>
+      <label>Slot</label>
+      <div class="slots" id="slotList">
+        <button class="slot-btn active" data-index="0">1</button>
+        <button class="slot-btn" data-index="1">2</button>
+        <button class="slot-btn" data-index="2">3</button>
+        <button class="slot-btn" data-index="3">4</button>
+        <button class="slot-btn" data-index="4">5</button>
+      </div>
+
       <label for="category">Category</label>
       <select id="category"></select>
 
@@ -246,6 +311,17 @@
       <label>Mutations</label>
       <div class="mutations" id="mutationList"></div>
 
+      <div id="customTintControls">
+        <div>
+          <label for="customColor">Color</label>
+          <input type="color" id="customColor" value="#ff00ff">
+        </div>
+        <div>
+          <label for="customOpacity">Opacity</label>
+          <input type="range" id="customOpacity" min="0" max="1" step="0.05" value="0.5">
+        </div>
+      </div>
+
       <label>Options</label>
       <div class="toggles">
         <label><input type="checkbox" id="optIcons" checked> Icons</label>
@@ -255,8 +331,13 @@
       <label for="scale">Scale</label>
       <input id="scale" type="range" min="0.1" max="4" step="0.1" value="1.5">
 
+      <label for="rotation">Rotation</label>
+      <input id="rotation" type="range" min="0" max="360" step="5" value="0">
+
       <div class="actions">
         <button id="download">Download PNG</button>
+        <button id="clearSlot" class="secondary">Clear Slot</button>
+        <button id="resetAll" class="danger">Reset All</button>
       </div>
 
       <p class="meta" id="status">Loading sprites...</p>
@@ -326,7 +407,8 @@
       Dawnlit: { overlayTall: null, tallIconOverride: null },
       Ambershine: { overlayTall: null, tallIconOverride: null },
       Dawncharged: { overlayTall: null, tallIconOverride: null },
-      Ambercharged: { overlayTall: null, tallIconOverride: null }
+      Ambercharged: { overlayTall: null, tallIconOverride: null },
+      Custom: { overlayTall: null, tallIconOverride: null }
     };
 
     const MUTATION_ORDER = [
@@ -338,7 +420,8 @@
       "Ambershine",
       "Dawnlit",
       "Dawncharged",
-      "Ambercharged"
+      "Ambercharged",
+      "Custom"
     ];
 
     const MUT_ICON_Y_EXCEPT = {
@@ -377,7 +460,8 @@
       Dawnlit: { op: "source-atop", colors: ["rgb(209,70,231)"], a: 0.5 },
       Ambershine: { op: "source-atop", colors: ["rgb(190,100,40)"], a: 0.5 },
       Dawncharged: { op: "source-atop", colors: ["rgb(140,80,200)"], a: 0.5 },
-      Ambercharged: { op: "source-atop", colors: ["rgb(170,60,25)"], a: 0.5 }
+      Ambercharged: { op: "source-atop", colors: ["rgb(170,60,25)"], a: 0.5 },
+      Custom: { op: "source-atop", colors: ["#ff00ff"], a: 0.5, masked: true }
     };
 
     const MUTATION_INDEX = new Map(MUTATION_ORDER.map((m, idx) => [m, idx]));
@@ -659,13 +743,97 @@
     const optIconsEl = document.getElementById("optIcons");
     const optOverlaysEl = document.getElementById("optOverlays");
     const downloadEl = document.getElementById("download");
+    const clearSlotEl = document.getElementById("clearSlot");
     const themeToggleEl = document.getElementById("themeToggle");
+    const slotListEl = document.getElementById("slotList");
+    const customColorEl = document.getElementById("customColor");
+    const customOpacityEl = document.getElementById("customOpacity");
+    const rotationEl = document.getElementById("rotation");
+    const resetAllEl = document.getElementById("resetAll");
 
     const frameIndex = new Map();
     const categoryIndex = new Map();
     const frameCanvasCache = new Map();
     let sheetImages = [];
     let lastRender = null;
+    let previewCanvas = null;
+    let previewCtx = null;
+    let renderRequested = false;
+
+    let currentSlot = 0;
+    const INITIAL_SLOTS = [
+      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 0, y: 0, scale: 1.5, rotation: 0 },
+      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 100, y: 0, scale: 1.5, rotation: 0 },
+      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 200, y: 0, scale: 1.5, rotation: 0 },
+      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 300, y: 0, scale: 1.5, rotation: 0 },
+      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 400, y: 0, scale: 1.5, rotation: 0 }
+    ];
+    let slots = JSON.parse(JSON.stringify(INITIAL_SLOTS));
+
+    let isDragging = false;
+    let dragTarget = -1;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    let slotRects = []; // For hit-testing
+
+    function saveCurrentSlot() {
+      const s = slots[currentSlot];
+      if (!s) return;
+      s.key = spriteEl.value || "";
+      s.mutations = getSelectedMutations();
+      s.options = { icons: optIconsEl.checked, overlays: optOverlaysEl.checked };
+      s.custom = { color: customColorEl.value, opacity: Number(customOpacityEl.value) };
+      s.scale = Number(scaleEl.value);
+      s.rotation = Number(rotationEl.value);
+      localStorage.setItem("mg_slots_v2", JSON.stringify(slots));
+      updateSlotIndicators();
+    }
+
+    function loadSlot(index) {
+      currentSlot = index;
+      const s = slots[index];
+
+      // Update UI
+      if (s.key) {
+        const entry = Array.from(categoryIndex.entries()).find(([cat, list]) => list.some(e => e.key === s.key));
+        if (entry) {
+          categoryEl.value = entry[0];
+          populateSprites();
+          spriteEl.value = s.key;
+        }
+      }
+
+      mutationListEl.querySelectorAll("input[type=checkbox]").forEach(cb => {
+        cb.checked = s.mutations.includes(cb.value);
+      });
+
+      optIconsEl.checked = s.options.icons;
+      optOverlaysEl.checked = s.options.overlays;
+      customColorEl.value = s.custom.color;
+      customOpacityEl.value = s.custom.opacity;
+      scaleEl.value = s.scale;
+      rotationEl.value = s.rotation || 0;
+
+      updateSlotIndicators();
+      updateCustomMutationUI();
+      renderPreview();
+    }
+
+    function updateSlotIndicators() {
+      document.querySelectorAll(".slot-btn").forEach((btn, idx) => {
+        btn.classList.toggle("active", idx === currentSlot);
+        btn.classList.toggle("occupied", !!slots[idx].key);
+      });
+    }
+
+    function updateCustomMutationUI() {
+      const hasCustom = getSelectedMutations().includes("Custom");
+      document.getElementById("customTintControls").style.display = hasCustom ? "grid" : "none";
+      if (hasCustom) {
+        FILTERS.Custom.colors = [customColorEl.value];
+        FILTERS.Custom.a = Number(customOpacityEl.value);
+      }
+    }
 
     function addCategoryEntry(category, name, key) {
       if (!categoryIndex.has(category)) categoryIndex.set(category, []);
@@ -746,7 +914,7 @@
       return canvas;
     }
 
-    function renderSprite(key, mutations, scale, useIcons, useOverlays) {
+    function renderSprite(key, mutations, scale, useIcons, useOverlays, rotation = 0) {
       const frameData = frameIndex.get(key);
       if (!frameData) return null;
 
@@ -777,11 +945,8 @@
       if (useOverlays && isTall) {
         const overlayPipeline = buildMutationPipeline(variant.overlayMuts, isTall);
         for (const step of overlayPipeline) {
-          // Explicitly prioritize the tall overlay from metadata
           let overlayKey = (step.overlayTall && frameIndex.has(step.overlayTall)) ? step.overlayTall : null;
-          if (!overlayKey) {
-            overlayKey = findOverlayKey(key, step.name, frameIndex, true);
-          }
+          if (!overlayKey) overlayKey = findOverlayKey(key, step.name, frameIndex, true);
 
           if (!overlayKey) continue;
           const overlayCanvas = getFrameCanvas(overlayKey);
@@ -789,8 +954,6 @@
 
           const ow = overlayCanvas.width;
           const oh = overlayCanvas.height;
-
-          // Align overlay pivot with base plant pivot (PROPER ANCHOR ALIGNMENT)
           const ovAnchorX = frameIndex.get(overlayKey)?.anchor?.x ?? 0.5;
           const overlayPosX = (anchorX * baseW) - (ovAnchorX * ow);
           const overlayPosY = 0;
@@ -800,14 +963,9 @@
           masked.height = oh;
           const mctx = masked.getContext("2d");
           mctx.imageSmoothingEnabled = false;
-
-          // ROBUST MASKING: Draw Overlay FIRST then mask with Plant
           mctx.drawImage(overlayCanvas, 0, 0);
-
-          // destination-in: Clips the EXISTING draw to the NEXT draw's silhouette
           mctx.globalCompositeOperation = "destination-in";
           mctx.drawImage(baseCanvas, -overlayPosX, -overlayPosY);
-
           drawOps.push({ type: 'overlay', canvas: masked, x: overlayPosX, y: overlayPosY, z: 3 });
         }
       }
@@ -828,13 +986,10 @@
           const iconFrame = frameIndex.get(iconKey);
           const iAnchorX = iconFrame?.anchor?.x ?? 0.5;
           const iAnchorY = iconFrame?.anchor?.y ?? 0.5;
-
           const iw = iconCanvas.width * iconLayout.iconScale;
           const ih = iconCanvas.height * iconLayout.iconScale;
-
           const x = pivotX + iconLayout.offset.x - iAnchorX * iw;
           const y = pivotY + iconLayout.offset.y - iAnchorY * ih;
-
           const z = FLOATING_MUTATION_ICONS.has(mut) ? 10 : (isTall ? -1 : 2);
 
           drawOps.push({ type: 'icon', canvas: iconCanvas, x: x, y: y, z: z, w: iw, h: ih });
@@ -853,32 +1008,36 @@
 
       const totalW = Math.ceil(maxX - minX);
       const totalH = Math.ceil(maxY - minY);
-
       const out = document.createElement("canvas");
       out.width = totalW;
       out.height = totalH;
       const ctx = out.getContext("2d");
       ctx.imageSmoothingEnabled = false;
-
       drawOps.sort((a, b) => a.z - b.z);
-
       for (const op of drawOps) {
         const w = op.w ?? op.canvas.width;
         const h = op.h ?? op.canvas.height;
         ctx.drawImage(op.canvas, op.x - minX, op.y - minY, w, h);
       }
 
-      if (scale && scale !== 1) {
-        const scaled = document.createElement("canvas");
-        scaled.width = out.width * scale;
-        scaled.height = out.height * scale;
-        const sctx = scaled.getContext("2d");
-        sctx.imageSmoothingEnabled = false;
-        sctx.drawImage(out, 0, 0, scaled.width, scaled.height);
-        return scaled;
-      }
+      const sw = Math.floor(out.width * scale);
+      const sh = Math.floor(out.height * scale);
+      const rad = (rotation * Math.PI) / 180;
+      const sin = Math.abs(Math.sin(rad));
+      const cos = Math.abs(Math.cos(rad));
+      const rw = Math.floor(sw * cos + sh * sin);
+      const rh = Math.floor(sw * sin + sh * cos);
 
-      return out;
+      const finalCanvas = document.createElement("canvas");
+      finalCanvas.width = Math.max(1, rw);
+      finalCanvas.height = Math.max(1, rh);
+      const fctx = finalCanvas.getContext("2d");
+      fctx.imageSmoothingEnabled = false;
+      fctx.translate(rw / 2, rh / 2);
+      fctx.rotate(rad);
+      fctx.drawImage(out, -sw / 2, -sh / 2, sw, sh);
+
+      return finalCanvas;
     }
 
     function buildMutationCheckboxes() {
@@ -930,27 +1089,100 @@
     }
 
     function renderPreview() {
-      const key = spriteEl.value;
-      if (!key) return;
+      const configs = [];
+      slots.forEach((s, idx) => {
+        const config = (idx === currentSlot) ? {
+          key: spriteEl.value || "",
+          mutations: getSelectedMutations(),
+          options: { icons: optIconsEl.checked, overlays: optOverlaysEl.checked },
+          scale: Number(scaleEl.value) || 1.5,
+          rotation: Number(rotationEl.value) || 0,
+          x: s.x,
+          y: s.y,
+          custom: { color: customColorEl.value, opacity: Number(customOpacityEl.value) },
+          _globalIdx: idx
+        } : {
+          ...s,
+          _globalIdx: idx
+        };
+        if (config.key) configs.push(config);
+      });
 
-      const muts = getSelectedMutations();
-      const scale = Number(scaleEl.value) || 1;
-      const useIcons = optIconsEl.checked;
-      const useOverlays = optOverlaysEl.checked;
+      if (!configs.length) {
+        previewWrap.innerHTML = "";
+        lastRender = null;
+        slotRects = [];
+        metaEl.textContent = "No sprites selected.";
+        return;
+      }
 
-      const canvas = renderSprite(key, muts, scale, useIcons, useOverlays);
-      if (!canvas) return;
-      lastRender = canvas;
+      // Render each
+      const renderInfos = configs.map(c => {
+        // Apply its custom filter
+        if (c.mutations.includes("Custom")) {
+          FILTERS.Custom.colors = [c.custom.color];
+          FILTERS.Custom.a = c.custom.opacity;
+        }
+        const canvas = renderSprite(c.key, c.mutations, c.scale, c.options.icons, c.options.overlays, c.rotation);
+        if (!canvas) return null;
+        return { canvas, x: c.x, y: c.y, _globalIdx: c._globalIdx };
+      }).filter(Boolean);
 
-      previewWrap.innerHTML = "";
-      previewWrap.appendChild(canvas);
+      if (!renderInfos.length) {
+        previewWrap.innerHTML = "";
+        lastRender = null;
+        slotRects = [];
+        return;
+      }
 
-      const frame = frameIndex.get(key);
-      const size = canvas.width + "x" + canvas.height;
-      const baseW = frame?.sourceSize?.w ?? frame?.frame?.w;
-      const baseH = frame?.sourceSize?.h ?? frame?.frame?.h;
-      const baseSize = frame ? baseW + "x" + baseH : "?";
-      metaEl.textContent = "Key: " + key + " | Base: " + baseSize + " | Output: " + size;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      renderInfos.forEach(info => {
+        minX = Math.min(minX, info.x);
+        minY = Math.min(minY, info.y);
+        maxX = Math.max(maxX, info.x + info.canvas.width);
+        maxY = Math.max(maxY, info.y + info.canvas.height);
+      });
+
+      slotRectsOffset = { x: minX, y: minY };
+
+      const sceneW = Math.max(1, maxX - minX);
+      const sceneH = Math.max(1, maxY - minY);
+
+      const scene = document.createElement("canvas");
+      scene.width = sceneW;
+      scene.height = sceneH;
+      const ctx = scene.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+
+      slotRects = [];
+      renderInfos.forEach(info => {
+        const dx = info.x - minX;
+        const dy = info.y - minY;
+        ctx.drawImage(info.canvas, dx, dy);
+        slotRects.push({
+          index: info._globalIdx,
+          x: dx,
+          y: dy,
+          w: info.canvas.width,
+          h: info.canvas.height
+        });
+      });
+
+      lastRender = scene;
+      if (!previewCanvas) {
+        previewWrap.innerHTML = "";
+        previewCanvas = document.createElement("canvas");
+        previewWrap.appendChild(previewCanvas);
+        previewCtx = previewCanvas.getContext("2d");
+      }
+      previewCanvas.width = sceneW;
+      previewCanvas.height = sceneH;
+      previewCtx.imageSmoothingEnabled = false;
+      previewCtx.clearRect(0, 0, sceneW, sceneH);
+      previewCtx.drawImage(scene, 0, 0);
+
+      const key = spriteEl.value || "(empty)";
+      metaEl.textContent = (configs.length > 1 ? configs.length + " sprites | " : "") + "Key: " + key + " | Output: " + sceneW + "x" + sceneH;
     }
 
     async function init() {
@@ -978,7 +1210,16 @@
         buildMutationCheckboxes();
         populateCategories();
         populateSprites();
-        renderPreview();
+
+        // Restore slots
+        const savedSlotsV2 = localStorage.getItem("mg_slots_v2");
+        if (savedSlotsV2) {
+          try {
+            const parsed = JSON.parse(savedSlotsV2);
+            parsed.forEach((s, idx) => { if (s && slots[idx]) slots[idx] = { ...slots[idx], ...s }; });
+          } catch (e) { }
+        }
+        loadSlot(0);
 
         const isFileProtocol = window.location.protocol === "file:";
         const baseStatus = "Loaded " + frameIndex.size + " sprites.";
@@ -1001,11 +1242,139 @@
       renderPreview();
     });
 
-    spriteEl.addEventListener("change", renderPreview);
-    mutationListEl.addEventListener("change", renderPreview);
-    scaleEl.addEventListener("input", renderPreview);
-    optIconsEl.addEventListener("change", renderPreview);
-    optOverlaysEl.addEventListener("change", renderPreview);
+    spriteEl.addEventListener("change", () => {
+      saveCurrentSlot();
+      renderPreview();
+    });
+    mutationListEl.addEventListener("change", () => {
+      updateCustomMutationUI();
+      saveCurrentSlot();
+      renderPreview();
+    });
+    rotationEl.addEventListener("input", () => {
+      saveCurrentSlot();
+      renderPreview();
+    });
+
+    scaleEl.addEventListener("input", () => {
+      saveCurrentSlot();
+      renderPreview();
+    });
+
+    resetAllEl.addEventListener("click", () => {
+      if (confirm("Clear all settings and reset to default?")) {
+        localStorage.removeItem("mg_slots");
+        localStorage.removeItem("mg_slots_v2");
+        slots = JSON.parse(JSON.stringify(INITIAL_SLOTS));
+        loadSlot(0);
+      }
+    });
+    optIconsEl.addEventListener("change", () => {
+      saveCurrentSlot();
+      renderPreview();
+    });
+    optOverlaysEl.addEventListener("change", () => {
+      saveCurrentSlot();
+      renderPreview();
+    });
+
+    slotListEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".slot-btn");
+      if (!btn) return;
+      saveCurrentSlot();
+      loadSlot(Number(btn.dataset.index));
+    });
+
+    customColorEl.addEventListener("input", () => {
+      updateCustomMutationUI();
+      saveCurrentSlot();
+      renderPreview();
+    });
+    customOpacityEl.addEventListener("input", () => {
+      updateCustomMutationUI();
+      saveCurrentSlot();
+      renderPreview();
+    });
+
+    function getEventPos(e) {
+      const rect = previewWrap.getBoundingClientRect();
+      const canvas = previewWrap.querySelector("canvas");
+      if (!canvas) return { x: 0, y: 0 };
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    }
+
+    const onStart = (e) => {
+      const pos = getEventPos(e);
+      // Hit-test backward (top sprite first)
+      for (let i = slotRects.length - 1; i >= 0; i--) {
+        const r = slotRects[i];
+        if (pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h) {
+          isDragging = true;
+          dragTarget = r.index;
+          dragOffsetX = slots[dragTarget].x - (pos.x + slotRectsOffset.x);
+          dragOffsetY = slots[dragTarget].y - (pos.y + slotRectsOffset.y);
+          if (e.type === 'mousedown') e.preventDefault();
+          return;
+        }
+      }
+    };
+
+    let slotRectsOffset = { x: 0, y: 0 };
+    // We need to update renderPreview to store the minX/minY offset used to draw
+
+    const onMove = (e) => {
+      if (!isDragging || dragTarget === -1) return;
+      const pos = getEventPos(e);
+      slots[dragTarget].x = pos.x + dragOffsetX;
+      slots[dragTarget].y = pos.y + dragOffsetY;
+
+      if (!renderRequested) {
+        renderRequested = true;
+        requestAnimationFrame(() => {
+          renderPreview();
+          renderRequested = false;
+        });
+      }
+      if (e.cancelable) e.preventDefault();
+    };
+
+    const onEnd = () => {
+      if (isDragging) {
+        isDragging = false;
+        saveCurrentSlot();
+      }
+    };
+
+    previewWrap.addEventListener("mousedown", onStart);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+
+    previewWrap.addEventListener("touchstart", onStart, { passive: false });
+    previewWrap.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+
+    clearSlotEl.addEventListener("click", () => {
+      const s = slots[currentSlot];
+      s.key = "";
+      s.mutations = [];
+      // Also reset position and scale for fresh start
+      s.x = currentSlot * 100;
+      s.y = 0;
+      s.scale = slots[0].scale || 1.5;
+
+      // Update UI
+      spriteEl.value = "";
+      mutationListEl.querySelectorAll("input").forEach(i => i.checked = false);
+      updateCustomMutationUI();
+
+      localStorage.setItem("mg_slots", JSON.stringify(slots));
+      updateSlotIndicators();
+      renderPreview();
+    });
 
     const SUN_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
     const MOON_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
