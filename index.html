@@ -205,6 +205,11 @@
       max-width: 100%;
       max-height: 70vh;
       object-fit: contain;
+      cursor: grab;
+    }
+
+    #previewCanvas canvas.dragging {
+      cursor: grabbing;
     }
 
     button.danger {
@@ -774,7 +779,9 @@
     let dragTarget = -1;
     let dragOffsetX = 0;
     let dragOffsetY = 0;
-    let slotRects = []; // For hit-testing
+    let slotRects = [];
+    let hoveredSlot = -1;
+    const HIT_PADDING = 20; // pixels of padding around sprites for easier selection
 
     function saveCurrentSlot() {
       const s = slots[currentSlot];
@@ -1309,14 +1316,32 @@
 
     const onStart = (e) => {
       const pos = getEventPos(e);
-      // Hit-test backward (top sprite first)
+      // Hit-test backward (top sprite first) with expanded hit area
       for (let i = slotRects.length - 1; i >= 0; i--) {
         const r = slotRects[i];
-        if (pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h) {
+        // Expand hit area for easier selection
+        const hitX = r.x - HIT_PADDING;
+        const hitY = r.y - HIT_PADDING;
+        const hitW = r.w + HIT_PADDING * 2;
+        const hitH = r.h + HIT_PADDING * 2;
+
+        if (pos.x >= hitX && pos.x <= hitX + hitW && pos.y >= hitY && pos.y <= hitY + hitH) {
           isDragging = true;
           dragTarget = r.index;
+          // Calculate offset: sprite position in world space minus click position in canvas space plus scene offset
           dragOffsetX = slots[dragTarget].x - (pos.x + slotRectsOffset.x);
           dragOffsetY = slots[dragTarget].y - (pos.y + slotRectsOffset.y);
+
+          // Switch to active slot
+          if (currentSlot !== dragTarget) {
+            saveCurrentSlot();
+            loadSlot(dragTarget);
+          }
+
+          // Add visual feedback
+          const canvas = previewWrap.querySelector('canvas');
+          if (canvas) canvas.classList.add('dragging');
+
           if (e.type === 'mousedown') e.preventDefault();
           return;
         }
@@ -1329,8 +1354,9 @@
     const onMove = (e) => {
       if (!isDragging || dragTarget === -1) return;
       const pos = getEventPos(e);
-      slots[dragTarget].x = pos.x + dragOffsetX;
-      slots[dragTarget].y = pos.y + dragOffsetY;
+      // Update sprite position: current mouse position plus scene offset plus the drag offset
+      slots[dragTarget].x = pos.x + slotRectsOffset.x + dragOffsetX;
+      slots[dragTarget].y = pos.y + slotRectsOffset.y + dragOffsetY;
 
       if (!renderRequested) {
         renderRequested = true;
@@ -1346,10 +1372,60 @@
       if (isDragging) {
         isDragging = false;
         saveCurrentSlot();
+
+        // Remove visual feedback
+        const canvas = previewWrap.querySelector('canvas');
+        if (canvas) canvas.classList.remove('dragging');
       }
     };
 
+    const onHover = (e) => {
+      if (isDragging) return;
+      const pos = getEventPos(e);
+      let found = -1;
+
+      // Hit-test with expanded area
+      for (let i = slotRects.length - 1; i >= 0; i--) {
+        const r = slotRects[i];
+        const hitX = r.x - HIT_PADDING;
+        const hitY = r.y - HIT_PADDING;
+        const hitW = r.w + HIT_PADDING * 2;
+        const hitH = r.h + HIT_PADDING * 2;
+
+        if (pos.x >= hitX && pos.x <= hitX + hitW && pos.y >= hitY && pos.y <= hitY + hitH) {
+          found = r.index;
+          break;
+        }
+      }
+
+      if (found !== hoveredSlot) {
+        hoveredSlot = found;
+        highlightHoveredSprite();
+      }
+    };
+
+    function highlightHoveredSprite() {
+      if (!previewCanvas || !previewCtx || !lastRender) return;
+
+      // Redraw the scene
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      previewCtx.drawImage(lastRender, 0, 0);
+
+      // Draw highlight box around hovered sprite
+      if (hoveredSlot !== -1) {
+        const r = slotRects.find(rect => rect.index === hoveredSlot);
+        if (r) {
+          previewCtx.strokeStyle = '#f08b6b';
+          previewCtx.lineWidth = 3;
+          previewCtx.setLineDash([5, 5]);
+          previewCtx.strokeRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
+          previewCtx.setLineDash([]);
+        }
+      }
+    }
+
     previewWrap.addEventListener("mousedown", onStart);
+    previewWrap.addEventListener("mousemove", onHover);
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onEnd);
 
