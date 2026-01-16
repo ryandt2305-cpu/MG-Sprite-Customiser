@@ -218,9 +218,7 @@
       <div id="previewCanvas"></div>
       <div class="meta" id="meta"></div>
     </section>
-  </main>
-
-  <!-- INLINE_SHEETS_START -->
+  </main> <!-- INLINE_SHEETS_START -->
   <!-- External sheet: assets/flat-sprites.webp -->
   <!-- INLINE_SHEETS_END -->
 
@@ -274,8 +272,8 @@
       Gold: { overlayTall: null, tallIconOverride: null },
       Rainbow: { overlayTall: null, tallIconOverride: null, angle: 130, angleTall: 0 },
       Wet: { overlayTall: "sprite/mutation-overlay/WetTallPlant", tallIconOverride: "sprite/mutation/Puddle" },
-      Chilled: { overlayTall: "sprite/mutation-overlay/ChilledTallPlant", tallIconOverride: null },
-      Frozen: { overlayTall: "sprite/mutation-overlay/FrozenTallPlant", tallIconOverride: null },
+      Chilled: { overlayTall: "sprite/mutation-overlay/ChilledTallPlant", tallIconOverride: "sprite/mutation/Chilled" },
+      Frozen: { overlayTall: "sprite/mutation-overlay/FrozenTallPlant", tallIconOverride: "sprite/mutation/Frozen" },
       Dawnlit: { overlayTall: null, tallIconOverride: null },
       Ambershine: { overlayTall: null, tallIconOverride: null },
       Dawncharged: { overlayTall: null, tallIconOverride: null },
@@ -413,6 +411,21 @@
       const aliases = mutationAliases(mutName);
 
       for (const name of aliases) {
+        // 1. Try Tall Overlays first if preferred
+        if (preferTall) {
+          const tallKey = "sprite/mutation-overlay/" + name + "TallPlant";
+          if (textures.has(tallKey)) return tallKey;
+
+          const altKey = "sprite/mutation-overlay/" + name;
+          if (textures.has(altKey)) return altKey;
+
+          for (const k of textures.keys()) {
+            const m = /sprite\/mutation-overlay\/([A-Za-z0-9]+)TallPlant/i.exec(String(k));
+            if (m && m[1] && m[1].toLowerCase() === name.toLowerCase()) return k;
+          }
+        }
+
+        // 2. Try Standard Mutation sprites
         const tries = [
           "sprite/mutation/" + name + base,
           "sprite/mutation/" + name + "-" + base,
@@ -423,19 +436,6 @@
         for (const k of tries) {
           if (textures.has(k)) return k;
         }
-
-        if (preferTall) {
-          const tallKey = "sprite/mutation-overlay/" + name + "TallPlant";
-          if (textures.has(tallKey)) return tallKey;
-          const altKey = "sprite/mutation-overlay/" + name;
-          if (textures.has(altKey)) return altKey;
-
-          for (const k of textures.keys()) {
-            const m = /sprite\/mutation-overlay\/([A-Za-z0-9]+)TallPlant/i.exec(String(k));
-            if (!m || !m[1]) continue;
-            if (m[1].toLowerCase() === name.toLowerCase()) return k;
-          }
-        }
       }
 
       return null;
@@ -444,6 +444,8 @@
     function findIconKey(itemKey, mutName, isTall, textures) {
       if (!mutName) return null;
       const meta = MUT_META[mutName];
+
+      // 1. Check Metadata override
       if (isTall && meta?.tallIconOverride && textures.has(meta.tallIconOverride)) {
         return meta.tallIconOverride;
       }
@@ -452,6 +454,15 @@
       const aliases = mutationAliases(mutName);
 
       for (const name of aliases) {
+        // 2. Try Tall variants if applicable
+        if (isTall) {
+          const tallIconKey = "sprite/mutation-overlay/" + name + "TallPlantIcon";
+          if (textures.has(tallIconKey)) return tallIconKey;
+          const tallKey = "sprite/mutation-overlay/" + name + "TallPlant";
+          if (textures.has(tallKey)) return tallKey;
+        }
+
+        // 3. Try standard icons
         const tries = [
           "sprite/mutation/" + name + "Icon",
           "sprite/mutation/" + name,
@@ -462,13 +473,6 @@
         ];
         for (const k of tries) {
           if (textures.has(k)) return k;
-        }
-
-        if (isTall) {
-          const tallIconKey = "sprite/mutation-overlay/" + name + "TallPlantIcon";
-          if (textures.has(tallIconKey)) return tallIconKey;
-          const tallKey = "sprite/mutation-overlay/" + name + "TallPlant";
-          if (textures.has(tallKey)) return tallKey;
         }
       }
 
@@ -571,8 +575,12 @@
       const h = sourceCanvas.height;
 
       ctx.save();
+      // Game Parity: Use source-in for standard tints to create a pure color silhouette
+      // This silhouette will be drawn over the base sprite to create the tint effect.
       const blendOp = f.masked ? pickBlendOp(f.op) : "source-in";
       ctx.globalCompositeOperation = blendOp;
+
+      // IMPORTANT: If source-in is used, we must use the alpha from f.a to control tint strength
       if (f.a != null) ctx.globalAlpha = f.a;
 
       if (f.masked) {
@@ -693,56 +701,12 @@
       const baseCanvas = getFrameCanvas(key);
       if (!baseCanvas) return null;
 
-      const out = document.createElement("canvas");
-      out.width = baseCanvas.width;
-      out.height = baseCanvas.height;
-      const octx = out.getContext("2d");
-      octx.imageSmoothingEnabled = false;
       const isTall = isTallKey(key);
       const variant = computeVariantSignature(mutations);
       const pipeline = buildMutationPipeline(variant.muts, isTall);
 
-      let icons = [];
-      let floating = [];
-      let iconLayout = null;
-      let basePos = null;
-
-      if (useIcons) {
-        iconLayout = computeIconLayout(frameData, isTall);
-        const anchorX = frameData.anchor?.x ?? 0.5;
-        const anchorY = frameData.anchor?.y ?? 0.5;
-        basePos = { x: out.width * anchorX, y: out.height * anchorY };
-
-        for (const mut of variant.selectedMuts) {
-          if (mut === "Gold" || mut === "Rainbow") continue;
-          const iconKey = findIconKey(key, mut, isTall, frameIndex);
-          if (!iconKey) continue;
-          const iconCanvas = getFrameCanvas(iconKey);
-          if (!iconCanvas) continue;
-          const iconFrame = frameIndex.get(iconKey);
-          const iAnchorX = iconFrame?.anchor?.x ?? 0.5;
-          const iAnchorY = iconFrame?.anchor?.y ?? 0.5;
-          const target = FLOATING_MUTATION_ICONS.has(mut) ? floating : icons;
-          target.push({ iconCanvas: iconCanvas, iAnchorX: iAnchorX, iAnchorY: iAnchorY });
-        }
-      }
-
-      function drawIcons(list) {
-        if (!iconLayout || !basePos) return;
-        for (const icon of list) {
-          const w = icon.iconCanvas.width * iconLayout.iconScale;
-          const h = icon.iconCanvas.height * iconLayout.iconScale;
-          const x = basePos.x + iconLayout.offset.x - icon.iAnchorX * w;
-          const y = basePos.y + iconLayout.offset.y - icon.iAnchorY * h;
-          octx.drawImage(icon.iconCanvas, x, y, w, h);
-        }
-      }
-
-      if (useIcons && isTall) {
-        drawIcons(icons);
-      }
-
-      octx.drawImage(baseCanvas, 0, 0);
+      const drawOps = [];
+      drawOps.push({ type: 'base', canvas: baseCanvas, x: 0, y: 0, z: 0 });
 
       for (const step of pipeline) {
         const layer = document.createElement("canvas");
@@ -752,29 +716,31 @@
         lctx.imageSmoothingEnabled = false;
         lctx.drawImage(baseCanvas, 0, 0);
         applyFilterOnto(lctx, layer, step.name, isTall);
-        octx.drawImage(layer, 0, 0);
+        drawOps.push({ type: 'layer', canvas: layer, x: 0, y: 0, z: 1 });
       }
+
+      const anchorX = frameData.anchor?.x ?? 0.5;
+      const baseW = baseCanvas.width;
 
       if (useOverlays && isTall) {
         const overlayPipeline = buildMutationPipeline(variant.overlayMuts, isTall);
-        const anchorX = frameData.anchor?.x ?? 0.5;
-        const anchorY = frameData.anchor?.y ?? 0.5;
-        const basePosX = out.width * anchorX;
-        const basePosY = out.height * anchorY;
-
         for (const step of overlayPipeline) {
-          const overlayKey = findOverlayKey(key, step.name, frameIndex, true);
+          // Explicitly prioritize the tall overlay from metadata
+          let overlayKey = (step.overlayTall && frameIndex.has(step.overlayTall)) ? step.overlayTall : null;
+          if (!overlayKey) {
+            overlayKey = findOverlayKey(key, step.name, frameIndex, true);
+          }
+
           if (!overlayKey) continue;
           const overlayCanvas = getFrameCanvas(overlayKey);
           if (!overlayCanvas) continue;
 
-          const overlayFrame = frameIndex.get(overlayKey);
-          const oAnchorX = overlayFrame?.anchor?.x ?? 0.5;
-          const oAnchorY = overlayFrame?.anchor?.y ?? 0.5;
-
           const ow = overlayCanvas.width;
           const oh = overlayCanvas.height;
-          const overlayPosX = basePosX - anchorX * ow;
+
+          // Align overlay pivot with base plant pivot (PROPER ANCHOR ALIGNMENT)
+          const ovAnchorX = frameIndex.get(overlayKey)?.anchor?.x ?? 0.5;
+          const overlayPosX = (anchorX * baseW) - (ovAnchorX * ow);
           const overlayPosY = 0;
 
           const masked = document.createElement("canvas");
@@ -782,17 +748,72 @@
           masked.height = oh;
           const mctx = masked.getContext("2d");
           mctx.imageSmoothingEnabled = false;
+
+          // ROBUST MASKING: Draw Overlay FIRST then mask with Plant
           mctx.drawImage(overlayCanvas, 0, 0);
+
+          // destination-in: Clips the EXISTING draw to the NEXT draw's silhouette
           mctx.globalCompositeOperation = "destination-in";
           mctx.drawImage(baseCanvas, -overlayPosX, -overlayPosY);
 
-          octx.drawImage(masked, overlayPosX, overlayPosY);
+          drawOps.push({ type: 'overlay', canvas: masked, x: overlayPosX, y: overlayPosY, z: 3 });
         }
       }
 
       if (useIcons) {
-        if (!isTall) drawIcons(icons);
-        drawIcons(floating);
+        const iconLayout = computeIconLayout(frameData, isTall);
+        const anchorY = frameData.anchor?.y ?? 0.5;
+        const pivotX = baseW * anchorX;
+        const pivotY = baseCanvas.height * anchorY;
+
+        for (const mut of variant.selectedMuts) {
+          if (mut === "Gold" || mut === "Rainbow") continue;
+          const iconKey = findIconKey(key, mut, isTall, frameIndex);
+          if (!iconKey) continue;
+          const iconCanvas = getFrameCanvas(iconKey);
+          if (!iconCanvas) continue;
+
+          const iconFrame = frameIndex.get(iconKey);
+          const iAnchorX = iconFrame?.anchor?.x ?? 0.5;
+          const iAnchorY = iconFrame?.anchor?.y ?? 0.5;
+
+          const iw = iconCanvas.width * iconLayout.iconScale;
+          const ih = iconCanvas.height * iconLayout.iconScale;
+
+          const x = pivotX + iconLayout.offset.x - iAnchorX * iw;
+          const y = pivotY + iconLayout.offset.y - iAnchorY * ih;
+
+          const z = FLOATING_MUTATION_ICONS.has(mut) ? 10 : (isTall ? -1 : 2);
+
+          drawOps.push({ type: 'icon', canvas: iconCanvas, x: x, y: y, z: z, w: iw, h: ih });
+        }
+      }
+
+      let minX = 0, minY = 0, maxX = baseW, maxY = baseCanvas.height;
+      for (const op of drawOps) {
+        const w = op.w ?? op.canvas.width;
+        const h = op.h ?? op.canvas.height;
+        if (op.x < minX) minX = op.x;
+        if (op.y < minY) minY = op.y;
+        if (op.x + w > maxX) maxX = op.x + w;
+        if (op.y + h > maxY) maxY = op.y + h;
+      }
+
+      const totalW = Math.ceil(maxX - minX);
+      const totalH = Math.ceil(maxY - minY);
+
+      const out = document.createElement("canvas");
+      out.width = totalW;
+      out.height = totalH;
+      const ctx = out.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+
+      drawOps.sort((a, b) => a.z - b.z);
+
+      for (const op of drawOps) {
+        const w = op.w ?? op.canvas.width;
+        const h = op.h ?? op.canvas.height;
+        ctx.drawImage(op.canvas, op.x - minX, op.y - minY, w, h);
       }
 
       if (scale && scale !== 1) {
@@ -940,6 +961,7 @@
         statusEl.textContent = "Copy failed.";
       }
     });
+
 
     downloadEl.addEventListener("click", () => {
       if (!lastRender) return;
