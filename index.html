@@ -232,13 +232,13 @@
     }
 
     .slots {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
       gap: 6px;
       margin-bottom: 12px;
     }
 
     .slot-btn {
-      flex: 1;
       padding: 6px;
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -246,9 +246,14 @@
       color: var(--ink);
       font-size: 11px;
       font-weight: 600;
-      cursor: pointer;
+      cursor: grab;
       text-align: center;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .slot-btn:active {
+      cursor: grabbing;
     }
 
     .slot-btn.active {
@@ -260,6 +265,37 @@
     .slot-btn.occupied:not(.active) {
       border-color: var(--accent-2);
       color: var(--accent-2);
+    }
+
+    .slot-btn.dragging {
+      opacity: 0.3;
+    }
+
+    .slot-btn.drag-over {
+      transform: scale(1.1);
+      border-color: var(--accent);
+      background: var(--accent);
+      opacity: 0.5;
+    }
+
+    .slot-btn::after {
+      content: attr(data-layer);
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--accent-2);
+      color: white;
+      font-size: 9px;
+      font-weight: bold;
+      padding: 2px 4px;
+      border-radius: 50%;
+      min-width: 16px;
+      text-align: center;
+      display: none;
+    }
+
+    .slot-btn.occupied::after {
+      display: block;
     }
 
     #customTintControls {
@@ -295,13 +331,9 @@
   <main>
     <section class="panel" id="controls">
       <h2>Controls</h2>
-      <label>Slot</label>
+      <label>Layers <span class="meta" style="font-weight: normal;">(drag to reorder)</span></label>
       <div class="slots" id="slotList">
-        <button class="slot-btn active" data-index="0">1</button>
-        <button class="slot-btn" data-index="1">2</button>
-        <button class="slot-btn" data-index="2">3</button>
-        <button class="slot-btn" data-index="3">4</button>
-        <button class="slot-btn" data-index="4">5</button>
+        <!-- Slot buttons generated dynamically -->
       </div>
 
       <label for="category">Category</label>
@@ -766,13 +798,16 @@
     let renderRequested = false;
 
     let currentSlot = 0;
-    const INITIAL_SLOTS = [
-      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 0, y: 0, scale: 1.5, rotation: 0 },
-      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 100, y: 0, scale: 1.5, rotation: 0 },
-      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 200, y: 0, scale: 1.5, rotation: 0 },
-      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 300, y: 0, scale: 1.5, rotation: 0 },
-      { key: "", mutations: [], options: { icons: true, overlays: true }, custom: { color: "#ff00ff", opacity: 0.5 }, x: 400, y: 0, scale: 1.5, rotation: 0 }
-    ];
+    const INITIAL_SLOTS = Array.from({ length: 10 }, (_, i) => ({
+      key: "",
+      mutations: [],
+      options: { icons: true, overlays: true },
+      custom: { color: "#ff00ff", opacity: 0.5 },
+      x: i * 100,
+      y: 0,
+      scale: 1.5,
+      rotation: 0
+    }));
     let slots = JSON.parse(JSON.stringify(INITIAL_SLOTS));
 
     let isDragging = false;
@@ -782,6 +817,117 @@
     let slotRects = [];
     let hoveredSlot = -1;
     const HIT_PADDING = 20; // pixels of padding around sprites for easier selection
+
+    // Slot drag-to-reorder state
+    let slotDragState = {
+      draggedIndex: -1,
+      dropTargetIndex: -1
+    };
+
+    function initializeSlotButtons() {
+      slotListEl.innerHTML = '';
+      for (let i = 0; i < slots.length; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'slot-btn';
+        btn.dataset.index = i;
+        btn.dataset.layer = slots.length - i; // Top layer = 10, bottom = 1
+        btn.textContent = i + 1;
+        btn.draggable = true;
+        slotListEl.appendChild(btn);
+      }
+      updateSlotIndicators();
+    }
+
+    function reorderSlots(fromIndex, toIndex) {
+      // Save current slot before reordering
+      saveCurrentSlot();
+
+      // Remove item from old position
+      const [movedSlot] = slots.splice(fromIndex, 1);
+
+      // Insert at new position
+      slots.splice(toIndex, 0, movedSlot);
+
+      // Update current slot index if it was affected
+      if (currentSlot === fromIndex) {
+        currentSlot = toIndex;
+      } else if (fromIndex < currentSlot && toIndex >= currentSlot) {
+        currentSlot--;
+      } else if (fromIndex > currentSlot && toIndex <= currentSlot) {
+        currentSlot++;
+      }
+
+      // Persist changes
+      localStorage.setItem('mg_slots_v2', JSON.stringify(slots));
+
+      // Rebuild UI
+      initializeSlotButtons();
+
+      // Re-render preview with new Z-order
+      renderPreview();
+    }
+
+    function onSlotDragStart(e) {
+      const btn = e.target.closest('.slot-btn');
+      if (!btn) return;
+
+      slotDragState.draggedIndex = parseInt(btn.dataset.index);
+      btn.classList.add('dragging');
+
+      // Set drag data for fallback browsers
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', slotDragState.draggedIndex);
+    }
+
+    function onSlotDragOver(e) {
+      e.preventDefault(); // Required to allow drop
+      const btn = e.target.closest('.slot-btn');
+      if (!btn) return;
+
+      const overIndex = parseInt(btn.dataset.index);
+      if (overIndex === slotDragState.draggedIndex) return;
+
+      // Visual feedback
+      slotListEl.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('drag-over'));
+      btn.classList.add('drag-over');
+      slotDragState.dropTargetIndex = overIndex;
+
+      e.dataTransfer.dropEffect = 'move';
+    }
+
+    function onSlotDragLeave(e) {
+      const btn = e.target.closest('.slot-btn');
+      if (btn) btn.classList.remove('drag-over');
+    }
+
+    function onSlotDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const fromIndex = slotDragState.draggedIndex;
+      const toIndex = slotDragState.dropTargetIndex;
+
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        cleanupSlotDrag();
+        return;
+      }
+
+      // Reorder slots array
+      reorderSlots(fromIndex, toIndex);
+
+      cleanupSlotDrag();
+    }
+
+    function onSlotDragEnd(e) {
+      cleanupSlotDrag();
+    }
+
+    function cleanupSlotDrag() {
+      slotListEl.querySelectorAll('.slot-btn').forEach(btn => {
+        btn.classList.remove('dragging', 'drag-over');
+      });
+      slotDragState = { draggedIndex: -1, dropTargetIndex: -1 };
+    }
 
     function saveCurrentSlot() {
       const s = slots[currentSlot];
@@ -1189,7 +1335,7 @@
       previewCtx.drawImage(scene, 0, 0);
 
       const key = spriteEl.value || "(empty)";
-      metaEl.textContent = (configs.length > 1 ? configs.length + " sprites | " : "") + "Key: " + key + " | Output: " + sceneW + "x" + sceneH;
+      metaEl.textContent = (configs.length > 1 ? configs.length + " layers | " : "") + "Key: " + key + " | Output: " + sceneW + "x" + sceneH;
     }
 
     async function init() {
@@ -1223,9 +1369,38 @@
         if (savedSlotsV2) {
           try {
             const parsed = JSON.parse(savedSlotsV2);
-            parsed.forEach((s, idx) => { if (s && slots[idx]) slots[idx] = { ...slots[idx], ...s }; });
-          } catch (e) { }
+
+            // Migrate from 5-slot to 10-slot format
+            if (parsed.length === 5) {
+              // Preserve existing 5 slots, add 5 new empty slots
+              const newSlots = [...parsed];
+              for (let i = 5; i < 10; i++) {
+                newSlots.push({
+                  key: "",
+                  mutations: [],
+                  options: { icons: true, overlays: true },
+                  custom: { color: "#ff00ff", opacity: 0.5 },
+                  x: i * 100,
+                  y: 0,
+                  scale: 1.5,
+                  rotation: 0
+                });
+              }
+              slots = newSlots;
+              localStorage.setItem('mg_slots_v2', JSON.stringify(slots));
+            } else {
+              // Already 10-slot format or other length
+              parsed.forEach((s, idx) => {
+                if (s && slots[idx]) slots[idx] = { ...slots[idx], ...s };
+              });
+            }
+          } catch (e) {
+            console.warn('Failed to parse saved slots:', e);
+          }
         }
+
+        // Initialize slot buttons dynamically
+        initializeSlotButtons();
         loadSlot(0);
 
         const isFileProtocol = window.location.protocol === "file:";
@@ -1291,6 +1466,13 @@
       saveCurrentSlot();
       loadSlot(Number(btn.dataset.index));
     });
+
+    // Add drag event listeners for reordering
+    slotListEl.addEventListener("dragstart", onSlotDragStart);
+    slotListEl.addEventListener("dragover", onSlotDragOver);
+    slotListEl.addEventListener("dragleave", onSlotDragLeave);
+    slotListEl.addEventListener("drop", onSlotDrop);
+    slotListEl.addEventListener("dragend", onSlotDragEnd);
 
     customColorEl.addEventListener("input", () => {
       updateCustomMutationUI();
@@ -1490,6 +1672,37 @@
     const savedTheme = localStorage.getItem("theme") || "dark";
     document.documentElement.setAttribute("data-theme", savedTheme);
     themeToggleEl.innerHTML = savedTheme === "dark" ? MOON_ICON : SUN_ICON;
+
+    // Keyboard shortcuts for layer management
+    document.addEventListener('keydown', (e) => {
+      // Ctrl/Cmd + Arrow Up = Move current slot up (higher z-index)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentSlot < slots.length - 1) {
+          reorderSlots(currentSlot, currentSlot + 1);
+        }
+      }
+
+      // Ctrl/Cmd + Arrow Down = Move current slot down (lower z-index)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentSlot > 0) {
+          reorderSlots(currentSlot, currentSlot - 1);
+        }
+      }
+
+      // Number keys 1-9, 0 = select layers
+      if (e.key >= '1' && e.key <= '9') {
+        const slotIndex = parseInt(e.key) - 1;
+        if (slotIndex < slots.length) {
+          saveCurrentSlot();
+          loadSlot(slotIndex);
+        }
+      } else if (e.key === '0' && slots.length >= 10) {
+        saveCurrentSlot();
+        loadSlot(9);
+      }
+    });
 
     init();
   </script>
